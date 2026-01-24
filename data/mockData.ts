@@ -5,7 +5,7 @@ export const mockUsers: User[] = [
   {
     id: '1',
     name: 'Sarah Johnson',
-    email: 'sarah@example.com',
+    email: 'provider@test.com',
     avatar: 'https://i.pravatar.cc/150?img=1',
     role: 'provider',
     rating: 4.8,
@@ -16,7 +16,7 @@ export const mockUsers: User[] = [
   {
     id: '2',
     name: 'Mike Chen',
-    email: 'mike@example.com',
+    email: 'both@test.com',
     avatar: 'https://i.pravatar.cc/150?img=2',
     role: 'both',
     rating: 4.6,
@@ -27,7 +27,7 @@ export const mockUsers: User[] = [
   {
     id: '3',
     name: 'Emma Davis',
-    email: 'emma@example.com',
+    email: 'seeker@test.com',
     avatar: 'https://i.pravatar.cc/150?img=3',
     role: 'seeker',
     rating: 4.9,
@@ -58,6 +58,13 @@ export const mockUsers: User[] = [
     verified: true,
   },
 ];
+
+// Test credentials
+export const testCredentials = {
+  provider: { email: 'provider@test.com', password: 'test123', userId: '1' },
+  seeker: { email: 'seeker@test.com', password: 'test123', userId: '3' },
+  both: { email: 'both@test.com', password: 'test123', userId: '2' },
+};
 
 // Mock Service Listings
 export const mockServices: ServiceListing[] = [

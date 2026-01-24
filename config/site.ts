@@ -5,26 +5,18 @@ export const siteConfig = {
   description: "Connect with your community. Share skills, tools, and services locally.",
   navItems: [
     {
-      label: "Home",
-      href: "/",
-    },
-    {
       label: "Services",
       href: "/services",
-    },
-    {
-      label: "My Bookings",
-      href: "/bookings",
-    },
-    {
-      label: "Post Service",
-      href: "/post-service",
     },
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
+      label: "Dashboard",
+      href: "/dashboard",
+    },
+    {
+      label: "My Account",
+      href: "/account",
     },
     {
       label: "My Services",
@@ -33,10 +25,6 @@ export const siteConfig = {
     {
       label: "My Bookings",
       href: "/bookings",
-    },
-    {
-      label: "Messages",
-      href: "/messages",
     },
     {
       label: "Settings",

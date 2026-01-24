@@ -44,7 +44,7 @@ const NeighbourlyLogo = () => (
 );
 
 export const Navbar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true for testing
   const [user] = useState({
     name: "John Doe",
     email: "john@example.com",
@@ -52,11 +52,47 @@ export const Navbar = () => {
     role: "both" as "provider" | "seeker" | "both"
   });
 
+  // Get role-based navigation items
+  const getRoleBasedNavItems = () => {
+    const baseItems = [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Browse Services", href: "/services" },
+    ];
+
+    if (user.role === 'seeker') {
+      return [
+        ...baseItems,
+        { label: "My Bookings", href: "/bookings" },
+      ];
+    }
+
+    if (user.role === 'provider') {
+      return [
+        ...baseItems,
+        { label: "My Services", href: "/my-services" },
+        { label: "Manage Bookings", href: "/manage-bookings" },
+      ];
+    }
+
+    if (user.role === 'both') {
+      return [
+        ...baseItems,
+        { label: "My Services", href: "/my-services" },
+        { label: "My Bookings", href: "/bookings" },
+        { label: "Manage Bookings", href: "/manage-bookings" },
+      ];
+    }
+
+    return baseItems;
+  };
+
+  const navItems = getRoleBasedNavItems();
+
   return (
     <HeroUINavbar maxWidth="xl" position="sticky" className="border-b border-divider">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2" href="/">
+          <NextLink className="flex justify-start items-center gap-2" href="/dashboard">
             <NeighbourlyLogo />
             <div className="flex flex-col">
               <p className="font-bold text-lg text-primary">Neighbourly</p>
@@ -65,7 +101,7 @@ export const Navbar = () => {
           </NextLink>
         </NavbarBrand>
         <ul className="hidden lg:flex gap-6 justify-start ml-8">
-          {siteConfig.navItems.map((item) => (
+          {navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
@@ -126,17 +162,29 @@ export const Navbar = () => {
                   <p className="font-semibold">Signed in as</p>
                   <p className="font-semibold">{user.email}</p>
                 </DropdownItem>
+                <DropdownItem key="account" as={NextLink} href="/account">
+                  My Account
+                </DropdownItem>
                 <DropdownItem key="dashboard" as={NextLink} href="/dashboard">
                   Dashboard
                 </DropdownItem>
-                <DropdownItem key="my-services" as={NextLink} href="/my-services">
-                  My Services
-                </DropdownItem>
-                <DropdownItem key="bookings" as={NextLink} href="/bookings">
-                  My Bookings
-                </DropdownItem>
-                <DropdownItem key="messages" as={NextLink} href="/messages">
-                  Messages
+                {user.role === 'seeker' || user.role === 'both' ? (
+                  <DropdownItem key="my-bookings" as={NextLink} href="/bookings">
+                    My Bookings
+                  </DropdownItem>
+                ) : null}
+                {user.role === 'provider' || user.role === 'both' ? (
+                  <>
+                    <DropdownItem key="my-services" as={NextLink} href="/my-services">
+                      My Services
+                    </DropdownItem>
+                    <DropdownItem key="manage-bookings" as={NextLink} href="/manage-bookings">
+                      Manage Bookings
+                    </DropdownItem>
+                  </>
+                ) : null}
+                <DropdownItem key="services" as={NextLink} href="/services">
+                  Browse Services
                 </DropdownItem>
                 <DropdownItem key="settings" as={NextLink} href="/settings">
                   Settings
@@ -164,7 +212,7 @@ export const Navbar = () => {
 
       <NavbarMenu>
         <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navItems.map((item) => (
+          {navItems.map((item) => (
             <NavbarMenuItem key={item.href}>
               <NextLink
                 className="w-full text-lg"
@@ -201,18 +249,26 @@ export const Navbar = () => {
               </>
             ) : (
               <>
-                {siteConfig.navMenuItems.map((item, index) => (
-                  <NavbarMenuItem key={`${item.label}-${index}`}>
-                    <Link
-                      className="w-full"
-                      color={index === siteConfig.navMenuItems.length - 1 ? "danger" : "foreground"}
-                      href={item.href}
-                      size="lg"
-                    >
-                      {item.label}
-                    </Link>
-                  </NavbarMenuItem>
-                ))}
+                <NavbarMenuItem>
+                  <Link
+                    className="w-full"
+                    color="foreground"
+                    href="/account"
+                    size="lg"
+                  >
+                    My Account
+                  </Link>
+                </NavbarMenuItem>
+                <NavbarMenuItem>
+                  <Link
+                    className="w-full"
+                    color="danger"
+                    href="/logout"
+                    size="lg"
+                  >
+                    Logout
+                  </Link>
+                </NavbarMenuItem>
               </>
             )}
           </div>

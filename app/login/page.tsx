@@ -50,7 +50,7 @@ export default function LoginPage() {
       alert("Login successful! Welcome to Neighbourly!");
       setIsLoading(false);
       // In a real app, redirect to dashboard or home
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     }, 1500);
   };
 
