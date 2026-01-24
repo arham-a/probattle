@@ -1,53 +1,85 @@
-# Next.js & HeroUI Template
+# Neighbourly - Stage 1: The Neighborhood Pilot
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+A hyper-local marketplace connecting community members to exchange skills, tools, and services.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+## 🚀 Stage 1 Features
 
-## Technologies Used
+### Core Functionality
+- **Service Listings**: Browse and search available services in your neighborhood
+- **Service Categories**: Organized by type (tutoring, repair, cleaning, gardening, etc.)
+- **Provider Profiles**: View provider ratings, reviews, and verification status
+- **Booking System**: Request services with date, time, and custom messages
+- **User Authentication**: Login/Register with role selection (Provider, Seeker, Both)
+- **Role-Based Interface**: Navbar adapts based on authentication status
+- **Responsive Design**: Modern, clean UI that works on all devices
+- **Dark/Light Mode**: Automatic theme switching support
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+### Pages Built
+1. **Home Page** (`/`) - Hero section with search and featured services
+2. **Services Page** (`/services`) - Complete service browser with filtering
+3. **Bookings Page** (`/bookings`) - Manage your service requests and status
+4. **Post Service Page** (`/post-service`) - Create new service listings
+5. **Login Page** (`/login`) - User authentication with social login options
+6. **Register Page** (`/register`) - Account creation with role selection (Provider/Seeker/Both)
+7. **Forgot Password Page** (`/forgot-password`) - Password reset functionality
 
-## How to Use
+### Tech Stack
+- **Frontend**: Next.js 15 with TypeScript
+- **UI Library**: Hero UI (modern React components)
+- **Styling**: Tailwind CSS with custom theme
+- **Data**: Mock data (JSON) for Stage 1 demonstration
 
-### Use the template with create-next-app
+## 🎨 Design Philosophy
 
-To create a new project based on this template using `create-next-app`, run the following command:
+- **Clean & Modern**: No glowing or shiny effects, just clean professional design
+- **Community-Focused**: Emphasizes trust, verification, and local connections
+- **Accessible**: Built with Hero UI's accessibility-first components
+- **Responsive**: Mobile-first design that scales beautifully
+
+## 🏗️ Data Model (Stage 1)
+
+### Core Entities
+- **User**: Provider/Seeker with ratings and verification
+- **ServiceListing**: Title, description, pricing, availability
+- **BookingRequest**: Service requests with status tracking
+
+### Key Features
+- User roles (Provider, Seeker, Both)
+- Service categorization and tagging
+- Flexible pricing (hourly, fixed, daily)
+- Availability scheduling
+- Rating and review system
+
+## 🚀 Getting Started
 
 ```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
-```
-
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
-
-```bash
+# Install dependencies
 npm install
-```
 
-### Run the development server
-
-```bash
+# Run development server
 npm run dev
+
+# Open http://localhost:3000
 ```
 
-### Setup pnpm (optional)
+## 🔮 Evolution to Stage 2
 
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
+The current architecture is designed to easily scale:
+- Mock data will be replaced with PostgreSQL database
+- Location-based queries will be added with geospatial indexing
+- Authentication system will be implemented
+- API endpoints will replace client-side data management
 
-```bash
-public-hoist-pattern[]=*@heroui/*
-```
+## 📱 Current Features Demo
 
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+- Browse 5+ sample services across different categories
+- Interactive search and filtering
+- Responsive service cards with provider info
+- Booking management with status tracking
+- Service posting form with validation
+- User authentication with role selection
+- Responsive navbar with user dropdown
+- Theme switching (dark/light mode)
+- Password reset functionality
 
-## License
-
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+Built with ❤️ for the community using Hero UI and Next.js.

@@ -1,28 +1,24 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Neighbourly",
+  description: "Connect with your community. Share skills, tools, and services locally.",
   navItems: [
     {
       label: "Home",
       href: "/",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "Services",
+      href: "/services",
     },
     {
-      label: "Pricing",
-      href: "/pricing",
+      label: "My Bookings",
+      href: "/bookings",
     },
     {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
-      href: "/about",
+      label: "Post Service",
+      href: "/post-service",
     },
   ],
   navMenuItems: [
@@ -31,28 +27,24 @@ export const siteConfig = {
       href: "/profile",
     },
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "My Services",
+      href: "/my-services",
     },
     {
-      label: "Projects",
-      href: "/projects",
+      label: "My Bookings",
+      href: "/bookings",
     },
     {
-      label: "Team",
-      href: "/team",
-    },
-    {
-      label: "Calendar",
-      href: "/calendar",
+      label: "Messages",
+      href: "/messages",
     },
     {
       label: "Settings",
       href: "/settings",
     },
     {
-      label: "Help & Feedback",
-      href: "/help-feedback",
+      label: "Help & Support",
+      href: "/help",
     },
     {
       label: "Logout",
@@ -60,10 +52,10 @@ export const siteConfig = {
     },
   ],
   links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
+    github: "https://github.com/neighbourly-app",
+    twitter: "https://twitter.com/neighbourly_app",
+    docs: "/docs",
+    discord: "https://discord.gg/neighbourly",
+    sponsor: "https://patreon.com/neighbourly",
   },
 };
