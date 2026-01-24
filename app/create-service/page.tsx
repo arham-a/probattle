@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -8,10 +9,11 @@ import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
 import { mockUsers, serviceCategories } from "@/data/mockData";
 
-export default function CreateServicePage() {
+function CreateServiceContent() {
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get('userId') || "1";
   const currentUser = mockUsers.find(user => user.id === userIdFromUrl);
@@ -369,5 +371,19 @@ export default function CreateServicePage() {
         </div>
       </form>
     </div>
+  );
+}
+export default function CreateServicePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading create service...</p>
+        </div>
+      </div>
+    }>
+      <CreateServiceContent />
+    </Suspense>
   );
 }

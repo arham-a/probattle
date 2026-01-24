@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -8,11 +9,12 @@ import { Avatar } from "@heroui/avatar";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Badge } from "@heroui/badge";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
 import { CalendarIcon, LocationIcon, MessageIcon, StarIcon } from "@/components/icons";
 import { mockUsers, mockBookings } from "@/data/mockData";
 
-export default function BookingsPage() {
+function BookingsContent() {
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get('userId') || "1";
   const currentUser = mockUsers.find(user => user.id === userIdFromUrl);
@@ -367,5 +369,20 @@ export default function BookingsPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function BookingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading bookings...</p>
+        </div>
+      </div>
+    }>
+      <BookingsContent />
+    </Suspense>
   );
 }

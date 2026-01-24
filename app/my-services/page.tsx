@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -9,11 +10,12 @@ import { Switch } from "@heroui/switch";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { useDisclosure } from "@heroui/modal";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
 import { mockUsers, mockServices, serviceCategories } from "@/data/mockData";
 import CreateServiceModal from "@/components/modals/create-service-modal";
 
-export default function MyServicesPage() {
+function MyServicesContent() {
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get('userId') || "1";
   const currentUser = mockUsers.find(user => user.id === userIdFromUrl);
@@ -301,5 +303,19 @@ export default function MyServicesPage() {
         }}
       />
     </div>
+  );
+}
+export default function MyServicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading your services...</p>
+        </div>
+      </div>
+    }>
+      <MyServicesContent />
+    </Suspense>
   );
 }

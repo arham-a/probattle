@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -12,12 +13,13 @@ import { Badge } from "@heroui/badge";
 import { Divider } from "@heroui/divider";
 import { Pagination } from "@heroui/pagination";
 import { useDisclosure } from "@heroui/modal";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
 import { SearchIcon, LocationIcon, StarIcon } from "@/components/icons";
 import { mockServices, mockUsers, serviceCategories } from "@/data/mockData";
 import CreateServiceModal from "@/components/modals/create-service-modal";
 
-export default function ServicesPage() {
+function ServicesContent() {
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get('userId') || "1";
   const currentUser = mockUsers.find(user => user.id === userIdFromUrl);
@@ -311,5 +313,19 @@ export default function ServicesPage() {
         }}
       />
     </div>
+  );
+}
+export default function ServicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading services...</p>
+        </div>
+      </div>
+    }>
+      <ServicesContent />
+    </Suspense>
   );
 }

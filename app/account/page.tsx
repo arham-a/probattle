@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -8,9 +9,10 @@ import { Avatar } from "@heroui/avatar";
 import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
+import { Spinner } from "@heroui/spinner";
 import { mockUsers } from "@/data/mockData";
 
-export default function AccountPage() {
+function AccountContent() {
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get('userId') || "1";
   const [currentUserId, setCurrentUserId] = useState(userIdFromUrl);
@@ -271,5 +273,19 @@ export default function AccountPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+export default function AccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading account...</p>
+        </div>
+      </div>
+    }>
+      <AccountContent />
+    </Suspense>
   );
 }

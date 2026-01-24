@@ -7,9 +7,14 @@ import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
 import { Switch } from "@heroui/switch";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import NextLink from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -44,14 +49,19 @@ export default function LoginPage() {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Login attempt:", formData);
-      alert("Login successful! Welcome to Neighbourly!");
+    try {
+      await login({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      // Redirect to dashboard on successful login
+      router.push("/dashboard");
+    } catch (error: any) {
+      setErrors({ general: error.message || "Login failed. Please try again." });
+    } finally {
       setIsLoading(false);
-      // In a real app, redirect to dashboard or home
-      window.location.href = "/dashboard";
-    }, 1500);
+    }
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -59,6 +69,10 @@ export default function LoginPage() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+    // Clear general error when user makes changes
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: "" }));
     }
   };
 
@@ -80,6 +94,12 @@ export default function LoginPage() {
           </CardHeader>
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errors.general && (
+                <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
+                  <p className="text-danger text-sm">{errors.general}</p>
+                </div>
+              )}
+
               <Input
                 label="Email Address"
                 placeholder="Enter your email"

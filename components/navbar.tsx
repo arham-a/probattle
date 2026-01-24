@@ -16,10 +16,11 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/d
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Neighbourly Logo Component
 const NeighbourlyLogo = () => (
@@ -44,13 +45,8 @@ const NeighbourlyLogo = () => (
 );
 
 export const Navbar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true for testing
-  const [user] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    role: "both" as "provider" | "seeker" | "both"
-  });
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
 
   // Get role-based navigation items
   const getRoleBasedNavItems = () => {
@@ -58,6 +54,8 @@ export const Navbar = () => {
       { label: "Dashboard", href: "/dashboard" },
       { label: "Browse Services", href: "/services" },
     ];
+
+    if (!user) return baseItems;
 
     if (user.role === 'seeker') {
       return [
@@ -86,13 +84,22 @@ export const Navbar = () => {
     return baseItems;
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const navItems = getRoleBasedNavItems();
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky" className="border-b border-divider">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2" href="/dashboard">
+          <NextLink className="flex justify-start items-center gap-2" href={isAuthenticated ? "/dashboard" : "/"}>
             <NeighbourlyLogo />
             <div className="flex flex-col">
               <p className="font-bold text-lg text-primary">Neighbourly</p>
@@ -100,21 +107,23 @@ export const Navbar = () => {
             </div>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-6 justify-start ml-8">
-          {navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium hover:text-primary transition-colors",
-                )}
-                href={item.href}
-              >
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul>
+        {isAuthenticated && (
+          <ul className="hidden lg:flex gap-6 justify-start ml-8">
+            {navItems.map((item) => (
+              <NavbarItem key={item.href}>
+                <NextLink
+                  className={clsx(
+                    linkStyles({ color: "foreground" }),
+                    "data-[active=true]:text-primary data-[active=true]:font-medium hover:text-primary transition-colors",
+                  )}
+                  href={item.href}
+                >
+                  {item.label}
+                </NextLink>
+              </NavbarItem>
+            ))}
+          </ul>
+        )}
       </NavbarContent>
 
       <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
@@ -122,7 +131,7 @@ export const Navbar = () => {
           <ThemeSwitch />
         </NavbarItem>
         
-        {!isLoggedIn ? (
+        {!isAuthenticated ? (
           <>
             <NavbarItem className="hidden md:flex">
               <Button
@@ -152,15 +161,15 @@ export const Navbar = () => {
                   as="button"
                   className="transition-transform hover:scale-105"
                   color="primary"
-                  name={user.name}
+                  name={user?.name || 'User'}
                   size="sm"
-                  src={user.avatar}
+                  src={user?.avatar}
                 />
               </DropdownTrigger>
               <DropdownMenu aria-label="Profile Actions" variant="flat">
                 <DropdownItem key="profile" className="h-14 gap-2">
                   <p className="font-semibold">Signed in as</p>
-                  <p className="font-semibold">{user.email}</p>
+                  <p className="font-semibold">{user?.email}</p>
                 </DropdownItem>
                 <DropdownItem key="account" as={NextLink} href="/account">
                   My Account
@@ -168,12 +177,12 @@ export const Navbar = () => {
                 <DropdownItem key="dashboard" as={NextLink} href="/dashboard">
                   Dashboard
                 </DropdownItem>
-                {user.role === 'seeker' || user.role === 'both' ? (
+                {(user?.role === 'seeker' || user?.role === 'both') ? (
                   <DropdownItem key="my-bookings" as={NextLink} href="/bookings">
                     My Bookings
                   </DropdownItem>
                 ) : null}
-                {user.role === 'provider' || user.role === 'both' ? (
+                {(user?.role === 'provider' || user?.role === 'both') ? (
                   <>
                     <DropdownItem key="my-services" as={NextLink} href="/my-services">
                       My Services
@@ -195,7 +204,7 @@ export const Navbar = () => {
                 <DropdownItem 
                   key="logout" 
                   color="danger"
-                  onClick={() => setIsLoggedIn(false)}
+                  onClick={handleLogout}
                 >
                   Log Out
                 </DropdownItem>
@@ -212,7 +221,7 @@ export const Navbar = () => {
 
       <NavbarMenu>
         <div className="mx-4 mt-2 flex flex-col gap-2">
-          {navItems.map((item) => (
+          {isAuthenticated && navItems.map((item) => (
             <NavbarMenuItem key={item.href}>
               <NextLink
                 className="w-full text-lg"
@@ -223,7 +232,7 @@ export const Navbar = () => {
             </NavbarMenuItem>
           ))}
           <div className="mt-4 pt-4 border-t border-divider">
-            {!isLoggedIn ? (
+            {!isAuthenticated ? (
               <>
                 <NavbarMenuItem>
                   <Button
@@ -260,14 +269,14 @@ export const Navbar = () => {
                   </Link>
                 </NavbarMenuItem>
                 <NavbarMenuItem>
-                  <Link
+                  <Button
                     className="w-full"
                     color="danger"
-                    href="/logout"
-                    size="lg"
+                    variant="flat"
+                    onClick={handleLogout}
                   >
                     Logout
-                  </Link>
+                  </Button>
                 </NavbarMenuItem>
               </>
             )}

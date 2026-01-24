@@ -9,9 +9,14 @@ import { Switch } from "@heroui/switch";
 import { RadioGroup, Radio } from "@heroui/radio";
 import { Chip } from "@heroui/chip";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import NextLink from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { register } = useAuth();
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -70,10 +75,8 @@ export default function RegisterPage() {
 
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = "Password must contain uppercase, lowercase, and number";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -99,29 +102,22 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     
-    // Create user object matching the data structure
-    const newUser = {
-      id: Date.now().toString(), // Generate temporary ID
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`,
-      role: formData.role,
-      rating: 0, // New users start with 0 rating
-      reviewCount: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
-      verified: false, // New users are not verified initially
-      location: formData.location,
-      bio: formData.bio,
-    };
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Registration successful:", newUser);
-      alert(`Welcome to Neighbourly, ${newUser.name}! Your account has been created successfully.`);
+    try {
+      await register({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        bio: formData.bio || undefined,
+      });
+      
+      // Redirect to dashboard on successful registration
+      router.push("/dashboard");
+    } catch (error: any) {
+      setErrors({ general: error.message || "Registration failed. Please try again." });
+    } finally {
       setIsLoading(false);
-      // In a real app, redirect to onboarding or dashboard
-      window.location.href = "/";
-    }, 2000);
+    }
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -129,6 +125,10 @@ export default function RegisterPage() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+    // Clear general error when user makes changes
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: "" }));
     }
   };
 
@@ -152,6 +152,12 @@ export default function RegisterPage() {
           </CardHeader>
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.general && (
+                <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
+                  <p className="text-danger text-sm">{errors.general}</p>
+                </div>
+              )}
+
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -217,7 +223,7 @@ export default function RegisterPage() {
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     isInvalid={!!errors.password}
                     errorMessage={errors.password}
-                    description="At least 8 characters with uppercase, lowercase, and number"
+                    description="At least 6 characters"
                     isRequired
                   />
                   <Input
