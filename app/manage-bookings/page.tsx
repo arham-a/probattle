@@ -15,32 +15,25 @@ import NextLink from "next/link";
 import { CalendarIcon, LocationIcon, MessageIcon, StarIcon } from "@/components/icons";
 import { mockUsers, mockBookings, mockServices } from "@/data/mockData";
 import CreateServiceModal from "@/components/modals/create-service-modal";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 function ManageBookingsContent() {
-  const searchParams = useSearchParams();
-  const userIdFromUrl = searchParams.get('userId') || "1";
-  const currentUser = mockUsers.find(user => user.id === userIdFromUrl);
+  const { user } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  if (!currentUser) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-danger">Access Denied</h1>
-          <p className="text-default-600 mt-2">Please log in to manage bookings.</p>
-        </div>
-      </div>
-    );
+  if (!user) {
+    return null; // ProtectedRoute will handle redirect
   }
 
   // Only show this page for providers and dual role users
-  if (currentUser.role === 'seeker') {
+  if (user.role === 'seeker') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-warning">Page Not Available</h1>
           <p className="text-default-600 mt-2">This page is only available for service providers.</p>
-          <Button as={NextLink} href={`/dashboard?userId=${currentUser.id}`} color="primary" className="mt-4">
+          <Button as={NextLink} href="/dashboard" color="primary" className="mt-4">
             Go to Dashboard
           </Button>
         </div>
@@ -49,7 +42,7 @@ function ManageBookingsContent() {
   }
 
   // Get user's services
-  const userServices = mockServices.filter(service => service.providerId === currentUser.id);
+  const userServices = mockServices.filter(service => service.providerId === user.id);
   
   // Filter bookings for this provider's services
   const providerBookings = mockBookings.filter(booking => 
@@ -285,7 +278,7 @@ function ManageBookingsContent() {
             <div className="flex gap-4 justify-center">
               <Button
                 as={NextLink}
-                href={`/my-services?userId=${currentUser.id}`}
+                href="/my-services"
                 color="primary"
               >
                 Manage My Services
@@ -358,13 +351,37 @@ function ManageBookingsContent() {
             </div>
           </Tab>
 
-          <Tab key="all" title={`All Bookings (${providerBookings.length})`}>
+          <Tab key="all" title={`All Provider Bookings (${providerBookings.length})`}>
             <div className="mt-4">
               {providerBookings.map((booking) => (
                 <BookingRequestCard key={booking.id} booking={booking} />
               ))}
             </div>
           </Tab>
+
+          {/* Add seeker bookings tab for users with role "both" */}
+          {user.role === 'both' && (
+            <Tab key="my-bookings" title="My Bookings as Seeker">
+              <div className="mt-4">
+                <Card>
+                  <CardBody className="text-center py-8">
+                    <h3 className="text-lg font-semibold mb-2">Your Bookings as a Seeker</h3>
+                    <p className="text-default-600 mb-4">
+                      View and manage services you've booked from other providers.
+                    </p>
+                    <Button
+                      as={NextLink}
+                      href="/my-bookings"
+                      color="primary"
+                      variant="flat"
+                    >
+                      View My Bookings
+                    </Button>
+                  </CardBody>
+                </Card>
+              </div>
+            </Tab>
+          )}
         </Tabs>
       )}
 
@@ -377,7 +394,7 @@ function ManageBookingsContent() {
           <div className="flex flex-wrap gap-3">
             <Button
               as={NextLink}
-              href={`/my-services?userId=${currentUser.id}`}
+              href="/my-services"
               color="primary"
               variant="flat"
             >
@@ -392,7 +409,7 @@ function ManageBookingsContent() {
             </Button>
             <Button
               as={NextLink}
-              href={`/account?userId=${currentUser.id}`}
+              href="/account"
               variant="flat"
             >
               Profile Settings
@@ -415,15 +432,17 @@ function ManageBookingsContent() {
 }
 export default function ManageBookingsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-4 text-default-600">Loading bookings...</p>
+    <ProtectedRoute>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Spinner size="lg" />
+            <p className="mt-4 text-default-600">Loading bookings...</p>
+          </div>
         </div>
-      </div>
-    }>
-      <ManageBookingsContent />
-    </Suspense>
+      }>
+        <ManageBookingsContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

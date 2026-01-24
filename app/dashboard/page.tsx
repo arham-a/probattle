@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex justify-between">
               <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
-              <Button as={NextLink} href="/bookings" size="sm" variant="flat">
+              <Button as={NextLink} href="/my-bookings" size="sm" variant="flat">
                 View All
               </Button>
             </CardHeader>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex justify-between">
                   <h3 className="text-lg font-semibold">My Active Bookings</h3>
-                  <Button as={NextLink} href="/bookings" size="sm" variant="flat">
+                  <Button as={NextLink} href="/my-bookings" size="sm" variant="flat">
                     View All
                   </Button>
                 </CardHeader>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                 <Button as={NextLink} href="/services" color="primary">
                   Browse Services
                 </Button>
-                <Button as={NextLink} href="/bookings" variant="flat">
+                <Button as={NextLink} href="/my-bookings" variant="flat">
                   My Bookings
                 </Button>
               </>

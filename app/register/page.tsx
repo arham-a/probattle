@@ -3,6 +3,7 @@
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
 import { Switch } from "@heroui/switch";
@@ -23,14 +24,80 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    phonePrefix: "+1",
+    phoneNumber: "",
     role: "seeker" as "provider" | "seeker" | "both",
     location: "",
     bio: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     agreeToTerms: false,
     subscribeNewsletter: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  // Phone number prefixes
+  const phonePrefixes = [
+    { value: "+1", label: "+1 (US/Canada)" },
+    { value: "+44", label: "+44 (UK)" },
+    { value: "+91", label: "+91 (India)" },
+    { value: "+86", label: "+86 (China)" },
+    { value: "+49", label: "+49 (Germany)" },
+    { value: "+33", label: "+33 (France)" },
+    { value: "+81", label: "+81 (Japan)" },
+    { value: "+61", label: "+61 (Australia)" },
+    { value: "+55", label: "+55 (Brazil)" },
+    { value: "+7", label: "+7 (Russia)" },
+  ];
+
+  // Get user's current location
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true);
+    
+    if (!navigator.geolocation) {
+      setErrors(prev => ({ ...prev, location: "Geolocation is not supported by this browser" }));
+      setIsGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setIsGettingLocation(false);
+        // Clear location error if it exists
+        if (errors.location) {
+          setErrors(prev => ({ ...prev, location: "" }));
+        }
+      },
+      (error) => {
+        let errorMessage = "Unable to get location";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied by user";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out";
+            break;
+        }
+        setErrors(prev => ({ ...prev, location: errorMessage }));
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
 
   const roleOptions = [
     {
@@ -73,6 +140,17 @@ export default function RegisterPage() {
       newErrors.email = "Please enter a valid email address";
     }
 
+    // Phone number validation
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else {
+      // Remove any non-digit characters for validation
+      const cleanPhone = formData.phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+        newErrors.phoneNumber = "Phone number must be between 7-15 digits";
+      }
+    }
+
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
@@ -103,12 +181,18 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
+      // Combine phone prefix and number
+      const fullPhoneNumber = `${formData.phonePrefix}${formData.phoneNumber.replace(/\D/g, '')}`;
+      
       await register({
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
+        phone: fullPhoneNumber,
         role: formData.role,
         bio: formData.bio || undefined,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
       });
       
       // Redirect to dashboard on successful registration
@@ -194,16 +278,78 @@ export default function RegisterPage() {
                   isRequired
                 />
 
-                <Input
-                  label="Location"
-                  placeholder="e.g., Downtown District, Suburban Area"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
-                  isInvalid={!!errors.location}
-                  errorMessage={errors.location}
-                  description="This helps neighbors find services near them"
-                  isRequired
-                />
+                {/* Phone Number Fields */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phone Number *</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <Select
+                      placeholder="Prefix"
+                      selectedKeys={[formData.phonePrefix]}
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
+                        handleInputChange("phonePrefix", selectedKey);
+                      }}
+                      size="md"
+                    >
+                      {phonePrefixes.map((prefix) => (
+                        <SelectItem key={prefix.value}>
+                          {prefix.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    <div className="md:col-span-2">
+                      <Input
+                        placeholder="Enter phone number"
+                        type="tel"
+                        value={formData.phoneNumber}
+                        onChange={(e) => {
+                          // Allow only digits, spaces, dashes, and parentheses
+                          const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
+                          handleInputChange("phoneNumber", value);
+                        }}
+                        isInvalid={!!errors.phoneNumber}
+                        errorMessage={errors.phoneNumber}
+                        description="Enter your phone number without country code"
+                      />
+                    </div>
+                  </div>
+                  {formData.phonePrefix && formData.phoneNumber && (
+                    <p className="text-xs text-default-500">
+                      Full number: {formData.phonePrefix}{formData.phoneNumber.replace(/\D/g, '')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Location Field with Get Location Button */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Location *</label>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      onPress={getCurrentLocation}
+                      isLoading={isGettingLocation}
+                      startContent={!isGettingLocation ? "📍" : undefined}
+                    >
+                      {isGettingLocation ? "Getting Location..." : "Use Current Location"}
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="e.g., Downtown District, Suburban Area"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange("location", e.target.value)}
+                    isInvalid={!!errors.location}
+                    errorMessage={errors.location}
+                    description="This helps neighbors find services near them"
+                    isRequired
+                  />
+                  {formData.latitude && formData.longitude && (
+                    <p className="text-xs text-success">
+                      ✓ Location detected: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                    </p>
+                  )}
+                </div>
 
                 <Textarea
                   label="Bio (Optional)"

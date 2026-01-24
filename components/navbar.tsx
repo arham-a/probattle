@@ -50,17 +50,17 @@ export const Navbar = () => {
 
   // Get role-based navigation items
   const getRoleBasedNavItems = () => {
+    if (!user) return [];
+
     const baseItems = [
       { label: "Dashboard", href: "/dashboard" },
-      { label: "Browse Services", href: "/services" },
     ];
-
-    if (!user) return baseItems;
 
     if (user.role === 'seeker') {
       return [
         ...baseItems,
-        { label: "My Bookings", href: "/bookings" },
+        { label: "Browse Services", href: "/services" },
+        { label: "My Bookings", href: "/my-bookings" },
       ];
     }
 
@@ -75,8 +75,8 @@ export const Navbar = () => {
     if (user.role === 'both') {
       return [
         ...baseItems,
+        { label: "Browse Services", href: "/services" },
         { label: "My Services", href: "/my-services" },
-        { label: "My Bookings", href: "/bookings" },
         { label: "Manage Bookings", href: "/manage-bookings" },
       ];
     }
@@ -178,9 +178,14 @@ export const Navbar = () => {
                   Dashboard
                 </DropdownItem>
                 {(user?.role === 'seeker' || user?.role === 'both') ? (
-                  <DropdownItem key="my-bookings" as={NextLink} href="/bookings">
-                    My Bookings
-                  </DropdownItem>
+                  <>
+                    <DropdownItem key="browse-services" as={NextLink} href="/services">
+                      Browse Services
+                    </DropdownItem>
+                    <DropdownItem key="my-bookings" as={NextLink} href="/my-bookings">
+                      My Bookings
+                    </DropdownItem>
+                  </>
                 ) : null}
                 {(user?.role === 'provider' || user?.role === 'both') ? (
                   <>
@@ -192,9 +197,6 @@ export const Navbar = () => {
                     </DropdownItem>
                   </>
                 ) : null}
-                <DropdownItem key="services" as={NextLink} href="/services">
-                  Browse Services
-                </DropdownItem>
                 <DropdownItem key="settings" as={NextLink} href="/settings">
                   Settings
                 </DropdownItem>
