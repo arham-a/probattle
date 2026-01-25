@@ -164,10 +164,11 @@ function MyServicesContent() {
                 <Tabs
                     aria-label="Filter catalog"
                     variant="underlined"
+                    className="w-full"
                     classNames={{
-                        tabList: "gap-8 w-full relative rounded-none p-0 border-b border-divider",
+                        tabList: "gap-8 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
                         cursor: "w-full bg-primary h-[3px]",
-                        tab: "max-w-fit px-0 h-14 font-black text-sm uppercase tracking-wider",
+                        tab: "max-w-fit px-4 h-14 font-black text-sm uppercase tracking-wider whitespace-nowrap flex-shrink-0",
                         tabContent: "group-data-[selected=true]:text-primary"
                     }}
                 >

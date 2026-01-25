@@ -14,18 +14,26 @@ export type {
 export { servicesService } from './services';
 export type { 
   Service, 
-  CreateServiceRequest, 
-  UpdateServiceRequest, 
-  ServiceSearchParams 
+  ServicesResponse,
+  SearchServicesParams 
 } from './services';
+
+// My Services
+export { myServicesService } from './my-services';
+export type {
+  CreateServiceRequest,
+  ServiceCategory,
+  PriceType,
+  MyServicesResponse,
+  MyServicesParams
+} from './my-services';
 
 // Bookings
 export { bookingsService } from './bookings';
 export type { 
-  Booking, 
-  CreateBookingRequest, 
-  UpdateBookingRequest, 
-  BookingSearchParams 
+  Booking,
+  BookingStatus,
+  MyBookingsResponse
 } from './bookings';
 
 // Users

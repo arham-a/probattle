@@ -57,11 +57,12 @@ export const BookingTabs = ({
             aria-label="Booking status"
             variant="underlined"
             color="primary"
+            className="w-full"
             classNames={{
-                tabList: "gap-8",
+                tabList: "gap-4 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
                 cursor: "w-full bg-primary",
-                tab: "max-w-fit px-0 h-12",
-                tabContent: "font-bold text-sm tracking-tight"
+                tab: "max-w-fit px-4 h-12 whitespace-nowrap flex-shrink-0",
+                tabContent: "font-bold text-sm tracking-tight group-data-[selected=true]:text-primary"
             }}
         >
             <Tab key="all" title={`All (${bookings.length})`}>

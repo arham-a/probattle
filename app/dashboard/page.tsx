@@ -287,7 +287,16 @@ function DashboardContent() {
         </div>
 
         {/* Tabs for Both Role */}
-        <Tabs aria-label="Dashboard sections" className="w-full">
+        <Tabs 
+          aria-label="Dashboard sections" 
+          className="w-full"
+          classNames={{
+            tabList: "gap-2 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
+            cursor: "w-full bg-primary",
+            tab: "max-w-fit px-4 h-12 whitespace-nowrap flex-shrink-0",
+            tabContent: "group-data-[selected=true]:text-primary text-sm font-medium"
+          }}
+        >
           <Tab key="provider" title="As Provider">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>

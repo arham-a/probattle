@@ -110,39 +110,45 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess, onCreat
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="4xl"
+      size="3xl"
       radius="lg"
       scrollBehavior="inside"
+      placement="center"
       classNames={{
-        base: "max-h-[90vh] bg-background shadow-2xl border-none m-4",
-        header: "border-b border-divider/50 px-6 py-4 md:px-8 md:py-6 flex-shrink-0",
-        body: "gap-6 p-6 md:p-8 overflow-y-auto custom-scrollbar",
-        footer: "border-t border-divider/50 px-6 py-4 md:px-8 md:py-6 flex-shrink-0",
-        closeButton: "top-4 right-4"
+        wrapper: "p-2 sm:p-4",
+        base: "max-h-[95vh] w-full max-w-3xl mx-auto bg-background shadow-2xl border-none",
+        header: "border-b border-divider/50 px-4 py-3 sm:px-6 sm:py-4 flex-shrink-0",
+        body: "px-4 py-4 sm:px-6 sm:py-6 overflow-y-auto max-h-[60vh]",
+        footer: "border-t border-divider/50 px-4 py-3 sm:px-6 sm:py-4 flex-shrink-0",
+        closeButton: "top-2 right-2 sm:top-4 sm:right-4"
       }}
     >
       <ModalContent>
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <ModalHeader className="flex flex-col gap-1">
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight text-primary">New Listing</h2>
-            <p className="text-xs md:text-sm font-bold text-default-500 uppercase tracking-widest opacity-70">Expand your reach</p>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-primary">New Listing</h2>
+            <p className="text-xs font-bold text-default-500 uppercase tracking-widest opacity-70">Expand your reach</p>
           </ModalHeader>
 
           <ModalBody>
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6">
               {/* Basic Info Section */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <Input
                   label="Listing Title"
                   placeholder="Professional Service Name"
                   labelPlacement="outside"
                   variant="flat"
                   radius="lg"
+                  size="sm"
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
                   isInvalid={!!errors.title}
                   errorMessage={errors.title}
-                  classNames={{ label: "font-black text-[10px] md:text-xs uppercase" }}
+                  classNames={{ 
+                    label: "font-black text-xs uppercase mb-1",
+                    input: "text-sm"
+                  }}
                 />
 
                 <Textarea
@@ -151,57 +157,73 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess, onCreat
                   labelPlacement="outside"
                   variant="flat"
                   radius="lg"
-                  minRows={4}
+                  minRows={3}
+                  maxRows={4}
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
                   isInvalid={!!errors.description}
                   errorMessage={errors.description}
-                  classNames={{ label: "font-black text-[10px] md:text-xs uppercase" }}
+                  classNames={{ 
+                    label: "font-black text-xs uppercase mb-1",
+                    input: "text-sm"
+                  }}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Category"
                     labelPlacement="outside"
                     placeholder="Choose..."
                     variant="flat"
                     radius="lg"
+                    size="sm"
                     selectedKeys={formData.category ? [formData.category] : []}
                     onSelectionChange={(keys) => handleInputChange("category", Array.from(keys)[0] as ServiceCategory)}
                     isInvalid={!!errors.category}
                     errorMessage={errors.category}
-                    classNames={{ label: "font-black text-[10px] md:text-xs uppercase" }}
+                    classNames={{ 
+                      label: "font-black text-xs uppercase mb-1",
+                      trigger: "min-h-10"
+                    }}
                   >
                     {CATEGORY_OPTIONS.map((c) => (
                       <SelectItem key={c.key}>{c.label}</SelectItem>
                     ))}
                   </Select>
 
-                  <div className="flex gap-2 items-end">
+                  <div className="flex gap-2">
                     <Input
                       label="Price"
                       labelPlacement="outside"
                       placeholder="0.00"
                       variant="flat"
                       radius="lg"
+                      size="sm"
                       className="flex-1"
                       type="number"
-                      startContent={<span className="text-default-400 font-bold">$</span>}
+                      startContent={<span className="text-default-400 font-bold text-sm">$</span>}
                       value={formData.price}
                       onChange={(e) => handleInputChange("price", e.target.value)}
                       isInvalid={!!errors.price}
                       errorMessage={errors.price}
-                      classNames={{ label: "font-black text-[10px] md:text-xs uppercase" }}
+                      classNames={{ 
+                        label: "font-black text-xs uppercase mb-1",
+                        input: "text-sm"
+                      }}
                     />
                     <Select
                       label="Unit"
                       labelPlacement="outside"
                       variant="flat"
                       radius="lg"
-                      className="w-24 md:w-32"
+                      size="sm"
+                      className="w-20"
                       selectedKeys={[formData.priceType]}
                       onSelectionChange={(keys) => handleInputChange("priceType", Array.from(keys)[0] as PriceType)}
-                      classNames={{ label: "font-black text-[10px] md:text-xs uppercase" }}
+                      classNames={{ 
+                        label: "font-black text-xs uppercase mb-1",
+                        trigger: "min-h-10"
+                      }}
                     >
                       <SelectItem key={PriceType.HOURLY}>/hr</SelectItem>
                       <SelectItem key={PriceType.DAILY}>/day</SelectItem>
@@ -212,73 +234,94 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess, onCreat
               </div>
 
               {/* Logistics Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <div className="p-5 md:p-6 rounded-2xl bg-default-50 border border-divider/50 shadow-sm">
-                  <p className="font-black text-[10px] md:text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Location Section */}
+                <div className="p-4 rounded-xl bg-default-50 border border-divider/50">
+                  <p className="font-black text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-primary" /> Location
                   </p>
-                  <div className="flex flex-col gap-4">
+                  <div className="space-y-3">
                     <Button
                       color="primary"
                       variant="shadow"
                       radius="lg"
-                      className="font-black h-12"
+                      size="sm"
+                      className="font-bold w-full"
                       onPress={getCurrentLocation}
                       isLoading={isGettingLocation}
                       startContent={<LocationIcon className="w-4 h-4" />}
                     >
-                      Capture Location
+                      Get Location
                     </Button>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <span className="text-[10px] font-black text-default-400 uppercase">Lat</span>
-                        <p className="text-xs font-bold text-default-700 bg-background p-2 rounded-lg border border-divider/40">{formData.latitude || '0.000000'}</p>
+                        <span className="text-xs font-bold text-default-400 uppercase">Lat</span>
+                        <p className="text-xs font-mono text-default-700 bg-background p-2 rounded border border-divider/40 truncate">
+                          {formData.latitude || '0.000000'}
+                        </p>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[10px] font-black text-default-400 uppercase">Lng</span>
-                        <p className="text-xs font-bold text-default-700 bg-background p-2 rounded-lg border border-divider/40">{formData.longitude || '0.000000'}</p>
+                        <span className="text-xs font-bold text-default-400 uppercase">Lng</span>
+                        <p className="text-xs font-mono text-default-700 bg-background p-2 rounded border border-divider/40 truncate">
+                          {formData.longitude || '0.000000'}
+                        </p>
                       </div>
                     </div>
-                    {errors.location && <p className="text-tiny text-danger font-bold text-center mt-1">{errors.location}</p>}
+                    {errors.location && <p className="text-xs text-danger font-bold text-center">{errors.location}</p>}
                   </div>
                 </div>
 
-                <div className="p-5 md:p-6 rounded-2xl bg-default-50 border border-divider/50 shadow-sm">
-                  <p className="font-black text-[10px] md:text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-success" /> Weekly Schedule
+                {/* Schedule Section */}
+                <div className="p-4 rounded-xl bg-default-50 border border-divider/50">
+                  <p className="font-black text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-success" /> Schedule
                   </p>
                   <CheckboxGroup
                     value={formData.availability}
                     onValueChange={(v) => handleInputChange("availability", v)}
                     classNames={{
-                      wrapper: "grid grid-cols-2 gap-y-2 gap-x-4 px-1"
+                      wrapper: "grid grid-cols-2 gap-2"
                     }}
                   >
                     {DAYS_OF_WEEK.map((day) => (
-                      <Checkbox key={day} value={day} classNames={{ label: "text-xs font-bold text-default-600" }}>
+                      <Checkbox 
+                        key={day} 
+                        value={day} 
+                        size="sm"
+                        classNames={{ 
+                          label: "text-xs font-bold text-default-600"
+                        }}
+                      >
                         {day.slice(0, 3)}
                       </Checkbox>
                     ))}
                   </CheckboxGroup>
-                  {errors.availability && <p className="text-tiny text-danger font-bold mt-3 text-center">{errors.availability}</p>}
+                  {errors.availability && <p className="text-xs text-danger font-bold mt-2 text-center">{errors.availability}</p>}
                 </div>
               </div>
             </div>
           </ModalBody>
 
-          <ModalFooter className="flex-col md:flex-row gap-3">
-            <Button variant="light" color="danger" radius="lg" className="font-bold order-2 md:order-1" onPress={onClose}>
-              Abandon
+          <ModalFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="light" 
+              color="danger" 
+              radius="lg" 
+              size="sm"
+              className="font-bold order-2 sm:order-1 w-full sm:w-auto" 
+              onPress={onClose}
+            >
+              Cancel
             </Button>
             <Button
               color="primary"
-              size="lg"
+              size="sm"
               radius="lg"
               type="submit"
-              className="font-black px-12 shadow-xl shadow-primary/20 w-full md:w-auto order-1 md:order-2"
+              className="font-black px-8 shadow-lg shadow-primary/20 w-full sm:w-auto order-1 sm:order-2"
               isLoading={isLoading}
             >
-              Launch Service
+              {isLoading ? "Creating..." : "Launch Service"}
             </Button>
           </ModalFooter>
         </form>
