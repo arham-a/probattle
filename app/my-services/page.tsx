@@ -105,7 +105,6 @@ function MyServicesContent() {
 
     return (
         <div className="container mx-auto px-6 md:px-10 py-12 max-w-[1400px]">
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                 <div>
                     <h1 className="text-4xl font-extrabold tracking-tight text-default-900 mb-2">My Catalog</h1>
