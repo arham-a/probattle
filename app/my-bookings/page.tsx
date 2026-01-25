@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -9,130 +9,153 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Badge } from "@heroui/badge";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
+import { useDisclosure } from "@heroui/modal";
 import NextLink from "next/link";
 import { CalendarIcon, LocationIcon, MessageIcon, StarIcon } from "@/components/icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useBookings } from "@/lib/hooks/useBookings";
+import { Booking, BookingStatus } from "@/lib/api/bookings";
+import { ratingsService, CreateRatingRequest } from "@/lib/api/ratings";
+import ReviewModal from "@/components/modals/review-modal";
 
 function MyBookingsContent() {
   const { user } = useAuth();
+  const { 
+    bookings, 
+    pendingBookings, 
+    acceptedBookings, 
+    completedBookings, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useBookings();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   if (!user) {
     return null; // ProtectedRoute will handle redirect
   }
 
-  // Mock data - in real app, fetch from API using bookingsService.getMyBookingsAsSeeker()
-  const mockBookings = [
-    {
-      id: "1",
-      serviceId: "s1",
-      status: "confirmed" as const,
-      scheduledDate: "2024-02-15",
-      scheduledTime: "10:00 AM",
-      totalAmount: 75,
-      notes: "Please bring your own cleaning supplies",
-      createdAt: "2024-02-10",
-      service: {
-        id: "s1",
-        title: "House Cleaning Service",
-        category: "Cleaning",
-        price: 75,
-        priceType: "fixed",
-        images: ["https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400"],
-      },
-      provider: {
-        id: "p1",
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        avatar: "https://i.pravatar.cc/150?img=1",
-        verified: true,
-      },
-    },
-    {
-      id: "2",
-      serviceId: "s2",
-      status: "pending" as const,
-      scheduledDate: "2024-02-20",
-      scheduledTime: "2:00 PM",
-      totalAmount: 120,
-      notes: "Need help with moving furniture",
-      createdAt: "2024-02-12",
-      service: {
-        id: "s2",
-        title: "Furniture Assembly & Moving",
-        category: "Home Improvement",
-        price: 40,
-        priceType: "hourly",
-        images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400"],
-      },
-      provider: {
-        id: "p2",
-        name: "Mike Chen",
-        email: "mike@example.com",
-        avatar: "https://i.pravatar.cc/150?img=2",
-        verified: true,
-      },
-    },
-    {
-      id: "3",
-      serviceId: "s3",
-      status: "completed" as const,
-      scheduledDate: "2024-02-05",
-      scheduledTime: "9:00 AM",
-      totalAmount: 90,
-      notes: "Great service, very professional",
-      createdAt: "2024-02-01",
-      service: {
-        id: "s3",
-        title: "Garden Maintenance",
-        category: "Gardening",
-        price: 30,
-        priceType: "hourly",
-        images: ["https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400"],
-      },
-      provider: {
-        id: "p3",
-        name: "Emma Wilson",
-        email: "emma@example.com",
-        avatar: "https://i.pravatar.cc/150?img=3",
-        verified: true,
-      },
-    },
-  ];
+  // Filter bookings for this seeker (where user is the seeker)
+  const seekerBookings = bookings.filter(booking => booking.seekerId === user.id);
+  const seekerPendingBookings = pendingBookings.filter(booking => booking.seekerId === user.id);
+  const seekerAcceptedBookings = acceptedBookings.filter(booking => booking.seekerId === user.id);
+  const seekerCompletedBookings = completedBookings.filter(booking => booking.seekerId === user.id);
 
-  const getStatusColor = (status: string) => {
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Spinner size="lg" />
+            <p className="mt-4 text-default-600">Loading your bookings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardBody className="text-center py-12">
+            <div className="text-danger mb-4">⚠️</div>
+            <h3 className="text-lg font-semibold mb-2 text-danger">Failed to Load Bookings</h3>
+            <p className="text-default-600 mb-4">{error}</p>
+            <Button color="primary" variant="flat" onPress={() => refetch()}>
+              Try Again
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  const getStatusColor = (status: BookingStatus) => {
     switch (status) {
-      case 'confirmed': return 'success';
-      case 'pending': return 'warning';
-      case 'completed': return 'primary';
-      case 'cancelled': return 'danger';
-      case 'in_progress': return 'secondary';
+      case BookingStatus.ACCEPTED: return 'success';
+      case BookingStatus.PENDING: return 'warning';
+      case BookingStatus.COMPLETED: return 'primary';
+      case BookingStatus.CANCELLED: return 'danger';
       default: return 'default';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: BookingStatus) => {
     switch (status) {
-      case 'confirmed': return 'Confirmed';
-      case 'pending': return 'Pending';
-      case 'completed': return 'Completed';
-      case 'cancelled': return 'Cancelled';
-      case 'in_progress': return 'In Progress';
+      case BookingStatus.ACCEPTED: return 'Confirmed';
+      case BookingStatus.PENDING: return 'Pending';
+      case BookingStatus.COMPLETED: return 'Completed';
+      case BookingStatus.CANCELLED: return 'Cancelled';
       default: return status;
     }
   };
 
-  const BookingCard = ({ booking }: { booking: typeof mockBookings[0] }) => (
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    return new Date(`2024-01-01T${timeString}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const handleReviewClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    onOpen();
+  };
+
+  const handleSubmitReview = async (reviewData: CreateRatingRequest) => {
+    try {
+      setActionLoading(reviewData.bookingId);
+      await ratingsService.createRating(reviewData);
+      setNotification({ message: 'Review submitted successfully!', type: 'success' });
+      setTimeout(() => setNotification(null), 3000);
+      // Refresh bookings to get updated data with the new rating
+      await refetch();
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      setNotification({ message: 'Failed to submit review. Please try again.', type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      throw error;
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const BookingCard = ({ booking }: { booking: Booking }) => (
     <Card className="mb-4">
       <CardBody className="p-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Service Image */}
           <div className="flex-shrink-0">
-            <img
-              src={booking.service.images?.[0] || "/placeholder-service.jpg"}
-              alt={booking.service.title}
-              className="w-full lg:w-32 h-32 object-cover rounded-lg"
-            />
+            {booking.service.images && booking.service.images.length > 0 ? (
+              <img
+                src={booking.service.images[0]}
+                alt={booking.service.title}
+                className="w-full lg:w-32 h-32 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-full lg:w-32 h-32 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center">
+                <span className="text-primary-600 text-2xl">
+                  {booking.service.category === 'tutoring' ? '📚' : 
+                   booking.service.category === 'repair' ? '🔧' : 
+                   booking.service.category === 'cleaning' ? '🧹' : '🔧'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Booking Details */}
@@ -140,7 +163,7 @@ function MyBookingsContent() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
               <div>
                 <h3 className="text-lg font-semibold">{booking.service.title}</h3>
-                <p className="text-sm text-default-600">{booking.service.category}</p>
+                <p className="text-sm text-default-600 capitalize">{booking.service.category}</p>
               </div>
               <Chip
                 size="sm"
@@ -160,7 +183,7 @@ function MyBookingsContent() {
                 size="sm"
               >
                 <Avatar
-                  src={booking.provider.avatar}
+                  src={booking.provider.avatar || undefined}
                   name={booking.provider.name}
                   size="sm"
                 />
@@ -175,37 +198,53 @@ function MyBookingsContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               <div className="flex items-center gap-2 text-sm">
                 <CalendarIcon className="w-4 h-4 text-default-400" />
-                <span>{booking.scheduledDate} at {booking.scheduledTime}</span>
+                <span>{formatDate(booking.requestedDate)} at {formatTime(booking.requestedTime)}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-default-400">💰</span>
-                <span className="font-medium">${booking.totalAmount}</span>
+                <span className="font-medium">${booking.totalPrice}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-default-400">⏱️</span>
+                <span>{booking.duration} hour{parseFloat(booking.duration) !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <LocationIcon className="w-4 h-4 text-default-400" />
+                <span>{booking.service.location}</span>
               </div>
             </div>
 
-            {/* Notes */}
-            {booking.notes && (
-              <div className="mb-3">
-                <div className="flex items-start gap-2 text-sm">
-                  <MessageIcon className="w-4 h-4 text-default-400 mt-0.5" />
-                  <p className="text-default-600">{booking.notes}</p>
+            {/* Rating Display */}
+            {booking.rating && (
+              <div className="mb-3 p-3 bg-default-50 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <StarIcon 
+                        key={i} 
+                        className={`w-4 h-4 ${i < booking.rating!.score ? 'text-warning fill-current' : 'text-default-300'}`} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium">{booking.rating.score}/5</span>
                 </div>
+                <p className="text-sm text-default-600">"{booking.rating.review}"</p>
               </div>
             )}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
-              {booking.status === 'pending' && (
+              {booking.status === BookingStatus.PENDING && (
                 <>
                   <Button size="sm" color="danger" variant="flat">
                     Cancel Request
                   </Button>
                   <Button size="sm" variant="flat">
-                    Edit Request
+                    Contact Provider
                   </Button>
                 </>
               )}
-              {booking.status === 'confirmed' && (
+              {booking.status === BookingStatus.ACCEPTED && (
                 <>
                   <Button size="sm" color="primary" variant="flat">
                     Contact Provider
@@ -215,11 +254,23 @@ function MyBookingsContent() {
                   </Button>
                 </>
               )}
-              {booking.status === 'completed' && (
+              {booking.status === BookingStatus.COMPLETED && (
                 <>
-                  <Button size="sm" color="warning" variant="flat">
-                    Leave Review
-                  </Button>
+                  {!booking.rating ? (
+                    <Button 
+                      size="sm" 
+                      color="warning" 
+                      variant="flat"
+                      onPress={() => handleReviewClick(booking)}
+                      isLoading={actionLoading === booking.id}
+                    >
+                      {actionLoading === booking.id ? "Loading..." : "Leave Review"}
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="flat" isDisabled>
+                      Review Submitted
+                    </Button>
+                  )}
                   <Button size="sm" variant="flat">
                     Book Again
                   </Button>
@@ -232,14 +283,19 @@ function MyBookingsContent() {
     </Card>
   );
 
-  // Filter bookings by status
-  const pendingBookings = mockBookings.filter(b => b.status === 'pending');
-  const confirmedBookings = mockBookings.filter(b => b.status === 'confirmed');
-  const completedBookings = mockBookings.filter(b => b.status === 'completed');
-  const allBookings = mockBookings;
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+          notification.type === 'success' 
+            ? 'bg-success text-success-foreground' 
+            : 'bg-danger text-danger-foreground'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
@@ -252,32 +308,32 @@ function MyBookingsContent() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardBody className="text-center p-4">
-            <div className="text-2xl font-bold text-warning">{pendingBookings.length}</div>
+            <div className="text-2xl font-bold text-warning">{seekerPendingBookings.length}</div>
             <div className="text-sm text-default-600">Pending</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center p-4">
-            <div className="text-2xl font-bold text-success">{confirmedBookings.length}</div>
+            <div className="text-2xl font-bold text-success">{seekerAcceptedBookings.length}</div>
             <div className="text-sm text-default-600">Confirmed</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center p-4">
-            <div className="text-2xl font-bold text-primary">{completedBookings.length}</div>
+            <div className="text-2xl font-bold text-primary">{seekerCompletedBookings.length}</div>
             <div className="text-sm text-default-600">Completed</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center p-4">
-            <div className="text-2xl font-bold text-default">{allBookings.length}</div>
+            <div className="text-2xl font-bold text-default">{seekerBookings.length}</div>
             <div className="text-sm text-default-600">Total</div>
           </CardBody>
         </Card>
       </div>
 
       {/* Bookings Tabs */}
-      {allBookings.length === 0 ? (
+      {seekerBookings.length === 0 ? (
         <Card>
           <CardBody className="text-center py-12">
             <h3 className="text-xl font-semibold mb-2">No Bookings Yet</h3>
@@ -296,18 +352,18 @@ function MyBookingsContent() {
         </Card>
       ) : (
         <Tabs aria-label="Booking status" className="w-full">
-          <Tab key="all" title={`All Bookings (${allBookings.length})`}>
+          <Tab key="all" title={`All Bookings (${seekerBookings.length})`}>
             <div className="mt-4">
-              {allBookings.map((booking) => (
+              {seekerBookings.map((booking) => (
                 <BookingCard key={booking.id} booking={booking} />
               ))}
             </div>
           </Tab>
 
-          <Tab key="pending" title={`Pending (${pendingBookings.length})`}>
+          <Tab key="pending" title={`Pending (${seekerPendingBookings.length})`}>
             <div className="mt-4">
-              {pendingBookings.length > 0 ? (
-                pendingBookings.map((booking) => (
+              {seekerPendingBookings.length > 0 ? (
+                seekerPendingBookings.map((booking) => (
                   <BookingCard key={booking.id} booking={booking} />
                 ))
               ) : (
@@ -323,10 +379,10 @@ function MyBookingsContent() {
             </div>
           </Tab>
 
-          <Tab key="confirmed" title={`Confirmed (${confirmedBookings.length})`}>
+          <Tab key="confirmed" title={`Confirmed (${seekerAcceptedBookings.length})`}>
             <div className="mt-4">
-              {confirmedBookings.length > 0 ? (
-                confirmedBookings.map((booking) => (
+              {seekerAcceptedBookings.length > 0 ? (
+                seekerAcceptedBookings.map((booking) => (
                   <BookingCard key={booking.id} booking={booking} />
                 ))
               ) : (
@@ -342,10 +398,10 @@ function MyBookingsContent() {
             </div>
           </Tab>
 
-          <Tab key="completed" title={`Completed (${completedBookings.length})`}>
+          <Tab key="completed" title={`Completed (${seekerCompletedBookings.length})`}>
             <div className="mt-4">
-              {completedBookings.length > 0 ? (
-                completedBookings.map((booking) => (
+              {seekerCompletedBookings.length > 0 ? (
+                seekerCompletedBookings.map((booking) => (
                   <BookingCard key={booking.id} booking={booking} />
                 ))
               ) : (
@@ -393,6 +449,16 @@ function MyBookingsContent() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Review Modal */}
+      {selectedBooking && (
+        <ReviewModal
+          isOpen={isOpen}
+          onClose={onClose}
+          booking={selectedBooking}
+          onSubmitReview={handleSubmitReview}
+        />
+      )}
     </div>
   );
 }

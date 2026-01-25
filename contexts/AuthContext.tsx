@@ -44,8 +44,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const isAuth = authService.isAuthenticated();
         
         if (isAuth && currentUser) {
+          console.log('User authenticated on app start:', currentUser.email);
           setUser(currentUser);
         } else {
+          console.log('No valid authentication found on app start');
           setUser(null);
         }
       } catch (error) {
@@ -57,6 +59,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
+
+    // Listen for storage changes (logout from another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'accessToken' && !e.newValue) {
+        console.log('Token removed in another tab, logging out');
+        setUser(null);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+      return () => window.removeEventListener('storage', handleStorageChange);
+    }
   }, []);
 
   const login = async (credentials: LoginRequest) => {
@@ -64,6 +79,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       setUser(response.user);
+      
+      // Redirect admin users to dashboard
+      if (response.user.role === 'admin') {
+        window.location.href = '/admin/dashboard';
+      }
     } catch (error) {
       setUser(null);
       throw error;

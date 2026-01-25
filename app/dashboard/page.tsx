@@ -1,94 +1,121 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { Badge } from "@heroui/badge";
 import { Tabs, Tab } from "@heroui/tabs";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRouteGuard } from "@/components/admin-route-guard";
+import { useDashboard } from "@/lib/hooks/useDashboard";
+import { 
+  SeekerDashboardResponse, 
+  ProviderDashboardResponse, 
+  BothDashboardResponse 
+} from "@/lib/api/dashboard";
+import { serviceCategories } from "@/data/mockData";
+import { LocationIcon } from "@/components/icons";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useAuth();
+  const { data, isLoading, error, fetchSeekerDashboard, fetchProviderDashboard, fetchBothDashboard } = useDashboard();
+
+  useEffect(() => {
+    if (user) {
+      switch (user.role) {
+        case 'seeker':
+          fetchSeekerDashboard();
+          break;
+        case 'provider':
+          fetchProviderDashboard();
+          break;
+        case 'both':
+          fetchBothDashboard();
+          break;
+      }
+    }
+  }, [user, fetchSeekerDashboard, fetchProviderDashboard, fetchBothDashboard]);
 
   if (!user) {
     return null; // ProtectedRoute will handle redirect
   }
 
-  // Mock data for demonstration - in real app, fetch from API
-  const getStats = () => {
-    switch (user.role) {
-      case 'seeker':
-        return [
-          { label: 'Total Bookings', value: 0, color: 'primary' },
-          { label: 'Active Bookings', value: 0, color: 'success' },
-          { label: 'Pending Requests', value: 0, color: 'warning' },
-          { label: 'Reviews Given', value: 0, color: 'default' },
-        ];
-      case 'provider':
-        return [
-          { label: 'Active Services', value: 0, color: 'primary' },
-          { label: 'Pending Requests', value: 0, color: 'warning' },
-          { label: 'Completion Rate', value: '100%', color: 'success' },
-          { label: 'Avg Rating', value: '5.0', color: 'default' },
-        ];
-      case 'both':
-        return [
-          { label: 'Services Offered', value: 0, color: 'success' },
-          { label: 'Services Booked', value: 0, color: 'primary' },
-          { label: 'Completion Rate', value: '100%', color: 'warning' },
-          { label: 'Total Activities', value: 0, color: 'default' },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const DashboardContent = () => (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Badge
-            content={user.verified ? "✓" : "!"}
-            color={user.verified ? "success" : "warning"}
-            placement="bottom-right"
-          >
-            <Avatar
-              src={user.avatar}
-              className="w-16 h-16"
-              name={user.name}
-            />
-          </Badge>
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, {user.name}!</h1>
-            <p className="text-default-600">
-              {user.role === 'seeker' && 'Service Seeker Dashboard'}
-              {user.role === 'provider' && 'Service Provider Dashboard'}
-              {user.role === 'both' && 'Provider & Seeker Dashboard'}
-            </p>
-          </div>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-default-600">Loading dashboard...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {getStats().map((stat, index) => (
-          <Card key={index}>
-            <CardBody className="text-center p-4">
-              <div className={`text-2xl font-bold text-${stat.color}`}>{stat.value}</div>
-              <div className="text-sm text-default-600">{stat.label}</div>
-            </CardBody>
-          </Card>
-        ))}
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-danger mb-4">Error Loading Dashboard</h1>
+          <p className="text-default-600 mb-4">{error}</p>
+          <Button 
+            color="primary" 
+            onPress={() => {
+              switch (user.role) {
+                case 'seeker':
+                  fetchSeekerDashboard();
+                  break;
+                case 'provider':
+                  fetchProviderDashboard();
+                  break;
+                case 'both':
+                  fetchBothDashboard();
+                  break;
+              }
+            }}
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
+    );
+  }
 
-      {/* Role-based Content */}
-      {user.role === 'seeker' && (
+  const formatPrice = (price: string, priceType: string) => {
+    const numPrice = parseFloat(price);
+    return `$${numPrice}${priceType === 'hourly' ? '/hr' : priceType === 'daily' ? '/day' : ''}`;
+  };
+
+  const renderSeekerDashboard = (dashboardData: SeekerDashboardResponse) => {
+    const stats = [
+      { label: 'Total Bookings', value: dashboardData.stats.totalBookings, color: 'primary' as const },
+      { label: 'Active Bookings', value: dashboardData.stats.activeBookings, color: 'success' as const },
+      { label: 'Pending Requests', value: dashboardData.stats.pendingRequests, color: 'warning' as const },
+      { label: 'Reviews Given', value: dashboardData.stats.reviewsGiven, color: 'default' as const },
+    ];
+
+    return (
+      <>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardBody className="text-center">
+                <div className={`text-3xl font-bold mb-2 text-${stat.color}`}>
+                  {stat.value}
+                </div>
+                <p className="text-default-600">{stat.label}</p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+
+        {/* Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Active Bookings */}
           <Card>
             <CardHeader className="flex justify-between">
               <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
@@ -97,67 +124,169 @@ export default function DashboardPage() {
               </Button>
             </CardHeader>
             <CardBody>
-              <div className="text-center py-8">
-                <p className="text-default-500 mb-4">No upcoming appointments</p>
-                <Button as={NextLink} href="/services" color="primary" variant="flat">
-                  Browse Services
-                </Button>
-              </div>
+              {dashboardData.upcomingAppointments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-default-500">No upcoming appointments</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dashboardData.upcomingAppointments.map((appointment, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      {/* Render appointment details */}
+                      <p>Appointment {index + 1}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardBody>
           </Card>
 
-          {/* Pending Requests */}
           <Card>
             <CardHeader>
               <h3 className="text-lg font-semibold">Pending Requests</h3>
             </CardHeader>
             <CardBody>
-              <div className="text-center py-8">
-                <p className="text-default-500">No pending requests</p>
-              </div>
+              {dashboardData.pendingRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-default-500">No pending requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dashboardData.pendingRequests.map((request, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      {/* Render request details */}
+                      <p>Request {index + 1}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>
-      )}
+      </>
+    );
+  };
 
-      {user.role === 'provider' && (
+  const renderProviderDashboard = (dashboardData: ProviderDashboardResponse) => {
+    const stats = [
+      { label: 'Active Services', value: dashboardData.stats.activeServices, color: 'primary' as const },
+      { label: 'Pending Requests', value: dashboardData.stats.pendingRequests, color: 'warning' as const },
+      { label: 'Completion Rate', value: `${dashboardData.stats.completionRate}%`, color: 'success' as const },
+      { label: 'Average Rating', value: dashboardData.stats.avgRating.toFixed(1), color: 'default' as const },
+    ];
+
+    return (
+      <>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardBody className="text-center">
+                <div className={`text-3xl font-bold mb-2 text-${stat.color}`}>
+                  {stat.value}
+                </div>
+                <p className="text-default-600">{stat.label}</p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+
+        {/* Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* My Active Services */}
           <Card>
             <CardHeader className="flex justify-between">
-              <h3 className="text-lg font-semibold">My Active Services</h3>
+              <h3 className="text-lg font-semibold">Active Services</h3>
               <Button as={NextLink} href="/my-services" size="sm" variant="flat">
-                Manage All
-              </Button>
-            </CardHeader>
-            <CardBody>
-              <div className="text-center py-8">
-                <p className="text-default-500 mb-4">No active services</p>
-                <Button as={NextLink} href="/create-service" color="primary" variant="flat">
-                  Create Service
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Incoming Requests */}
-          <Card>
-            <CardHeader className="flex justify-between">
-              <h3 className="text-lg font-semibold">Incoming Requests</h3>
-              <Button as={NextLink} href="/manage-bookings" size="sm" variant="flat">
                 View All
               </Button>
             </CardHeader>
             <CardBody>
-              <div className="text-center py-8">
-                <p className="text-default-500">No pending requests</p>
-              </div>
+              {dashboardData.activeServices.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-default-500">No active services</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dashboardData.activeServices.slice(0, 3).map((service) => (
+                    <div key={service.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold">{service.title}</h4>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color="primary"
+                        >
+                          {serviceCategories.find(cat => cat.key === service.category)?.icon} {serviceCategories.find(cat => cat.key === service.category)?.label}
+                        </Chip>
+                      </div>
+                      <p className="text-sm text-default-600 mb-2">{service.description}</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <LocationIcon className="w-4 h-4 text-default-400" />
+                          <span className="text-sm">{service.location}</span>
+                        </div>
+                        <span className="font-semibold text-primary">
+                          {formatPrice(service.price, service.priceType)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Incoming Requests</h3>
+            </CardHeader>
+            <CardBody>
+              {dashboardData.incomingRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-default-500">No incoming requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dashboardData.incomingRequests.map((request, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      {/* Render request details */}
+                      <p>Request {index + 1}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>
-      )}
+      </>
+    );
+  };
 
-      {user.role === 'both' && (
+  const renderBothDashboard = (dashboardData: BothDashboardResponse) => {
+    const stats = [
+      { label: 'Services Offered', value: dashboardData.stats.servicesOffered, color: 'primary' as const },
+      { label: 'Services Booked', value: dashboardData.stats.servicesBooked, color: 'success' as const },
+      { label: 'Completion Rate', value: `${dashboardData.stats.completionRate}%`, color: 'warning' as const },
+      { label: 'Total Activities', value: dashboardData.stats.totalActivities, color: 'default' as const },
+    ];
+
+    return (
+      <>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardBody className="text-center">
+                <div className={`text-3xl font-bold mb-2 text-${stat.color}`}>
+                  {stat.value}
+                </div>
+                <p className="text-default-600">{stat.label}</p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+
+        {/* Tabs for Both Role */}
         <Tabs aria-label="Dashboard sections" className="w-full">
           <Tab key="provider" title="As Provider">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -165,16 +294,47 @@ export default function DashboardPage() {
                 <CardHeader className="flex justify-between">
                   <h3 className="text-lg font-semibold">My Services</h3>
                   <Button as={NextLink} href="/my-services" size="sm" variant="flat">
-                    Manage All
+                    View All
                   </Button>
                 </CardHeader>
                 <CardBody>
-                  <div className="text-center py-8">
-                    <p className="text-default-500 mb-4">No services yet</p>
-                    <Button as={NextLink} href="/create-service" color="primary" variant="flat">
-                      Create Service
-                    </Button>
-                  </div>
+                  {dashboardData.myServices.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-default-500">No services created</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {dashboardData.myServices.slice(0, 3).map((service) => (
+                        <div key={service.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold">{service.title}</h4>
+                            <div className="flex gap-2">
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                              >
+                                {serviceCategories.find(cat => cat.key === service.category)?.icon} {serviceCategories.find(cat => cat.key === service.category)?.label}
+                              </Chip>
+                              <Badge color={service.isActive ? "success" : "danger"} size="sm">
+                                {service.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm text-default-600 mb-2">{service.description}</p>
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <LocationIcon className="w-4 h-4 text-default-400" />
+                              <span className="text-sm">{service.location}</span>
+                            </div>
+                            <span className="font-semibold text-primary">
+                              {formatPrice(service.price, service.priceType)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
 
@@ -183,9 +343,20 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-semibold">Incoming Requests</h3>
                 </CardHeader>
                 <CardBody>
-                  <div className="text-center py-8">
-                    <p className="text-default-500">No pending requests</p>
-                  </div>
+                  {dashboardData.incomingRequests.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-default-500">No incoming requests</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {dashboardData.incomingRequests.map((request, index) => (
+                        <div key={index} className="p-4 border rounded-lg">
+                          {/* Render request details */}
+                          <p>Request {index + 1}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             </div>
@@ -195,38 +366,61 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="flex justify-between">
-                  <h3 className="text-lg font-semibold">My Active Bookings</h3>
+                  <h3 className="text-lg font-semibold">My Bookings</h3>
                   <Button as={NextLink} href="/my-bookings" size="sm" variant="flat">
                     View All
                   </Button>
                 </CardHeader>
                 <CardBody>
                   <div className="text-center py-8">
-                    <p className="text-default-500 mb-4">No active bookings</p>
-                    <Button as={NextLink} href="/services" color="primary" variant="flat">
-                      Browse Services
-                    </Button>
+                    <p className="text-default-500">No recent bookings</p>
                   </div>
                 </CardBody>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <h3 className="text-lg font-semibold">My Pending Requests</h3>
+                  <h3 className="text-lg font-semibold">Browse Services</h3>
                 </CardHeader>
                 <CardBody>
                   <div className="text-center py-8">
-                    <p className="text-default-500">No pending requests</p>
+                    <p className="text-default-500 mb-4">Discover services in your area</p>
+                    <Button as={NextLink} href="/services" color="primary">
+                      Browse Services
+                    </Button>
                   </div>
                 </CardBody>
               </Card>
             </div>
           </Tab>
         </Tabs>
+      </>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">
+          Welcome back, {user.name}!
+        </h1>
+        <p className="text-default-600">
+          Here's what's happening with your {user.role === 'both' ? 'services and bookings' : user.role === 'provider' ? 'services' : 'bookings'}
+        </p>
+      </div>
+
+      {/* Dashboard Content Based on Role */}
+      {data && (
+        <>
+          {user.role === 'seeker' && renderSeekerDashboard(data as SeekerDashboardResponse)}
+          {user.role === 'provider' && renderProviderDashboard(data as ProviderDashboardResponse)}
+          {user.role === 'both' && renderBothDashboard(data as BothDashboardResponse)}
+        </>
       )}
 
       {/* Quick Actions - Role Based */}
-      <Card className="mt-6">
+      <Card className="mt-8">
         <CardHeader>
           <h3 className="text-lg font-semibold">Quick Actions</h3>
         </CardHeader>
@@ -267,10 +461,14 @@ export default function DashboardPage() {
       </Card>
     </div>
   );
+}
 
+export default function DashboardPage() {
   return (
     <ProtectedRoute>
-      <DashboardContent />
+      <AdminRouteGuard>
+        <DashboardContent />
+      </AdminRouteGuard>
     </ProtectedRoute>
   );
 }

@@ -1,157 +1,114 @@
 import { apiClient } from './config';
 
+export enum BookingStatus {
+  PENDING = 'pending',
+  ACCEPTED = 'accepted',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled'
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  bio: string | null;
+  role: string;
+  latitude: string | null;
+  longitude: string | null;
+  avatar: string | null;
+  verified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Service {
+  id: string;
+  providerId: string;
+  title: string;
+  description: string;
+  category: string;
+  price: string;
+  priceType: string;
+  availability: string[];
+  location: string;
+  city: string;
+  isActive: boolean;
+  latitude: string;
+  longitude: string;
+  h3Index: string;
+  images: string[];
+  approvalStatus: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  provider: User;
+}
+
+export interface Rating {
+  id: string;
+  score: number;
+  review: string | null;
+  createdAt: string;
+}
+
 export interface Booking {
   id: string;
   serviceId: string;
   seekerId: string;
   providerId: string;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  scheduledDate: string;
-  notes?: string;
-  totalAmount: number;
+  requestedDate: string;
+  requestedTime: string;
+  duration: string;
+  status: BookingStatus;
+  totalPrice: string;
   createdAt: string;
   updatedAt: string;
-  service: {
-    id: string;
-    title: string;
-    category: string;
-    price: number;
-    priceType: string;
-    images?: string[];
-  };
-  seeker: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  provider: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+  service: Service;
+  seeker: User;
+  provider: User;
+  rating?: Rating; // Optional rating for completed bookings
 }
 
-export interface CreateBookingRequest {
-  serviceId: string;
-  scheduledDate: string;
-  notes?: string;
-  totalAmount: number;
-}
-
-export interface UpdateBookingRequest {
-  status?: 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  scheduledDate?: string;
-  notes?: string;
-  totalAmount?: number;
-}
-
-export interface BookingSearchParams {
-  status?: string;
-  role?: 'seeker' | 'provider';
-  page?: number;
-  limit?: number;
+export interface MyBookingsResponse {
+  bookings: Booking[];
 }
 
 class BookingsService {
-  async getBookings(params?: BookingSearchParams): Promise<{
-    bookings: Booking[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
+  async getMyBookings(): Promise<MyBookingsResponse> {
     try {
-      const response = await apiClient.get('/bookings', { params });
+      const response = await apiClient.get<MyBookingsResponse>('/bookings/my-bookings');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to fetch bookings');
     }
   }
 
-  async getBooking(id: string): Promise<Booking> {
+  async acceptBooking(bookingId: string): Promise<Booking> {
     try {
-      const response = await apiClient.get(`/bookings/${id}`);
+      const response = await apiClient.put<Booking>(`/bookings/${bookingId}/accept`);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch booking');
+      throw new Error(error.response?.data?.error || 'Failed to accept booking');
     }
   }
 
-  async createBooking(bookingData: CreateBookingRequest): Promise<Booking> {
+  async rejectBooking(bookingId: string): Promise<Booking> {
     try {
-      const response = await apiClient.post('/bookings', bookingData);
+      const response = await apiClient.put<Booking>(`/bookings/${bookingId}/reject`);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to create booking');
+      throw new Error(error.response?.data?.error || 'Failed to reject booking');
     }
   }
 
-  async updateBooking(id: string, bookingData: UpdateBookingRequest): Promise<Booking> {
+  async completeBooking(bookingId: string): Promise<Booking> {
     try {
-      const response = await apiClient.put(`/bookings/${id}`, bookingData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to update booking');
-    }
-  }
-
-  async cancelBooking(id: string): Promise<Booking> {
-    try {
-      const response = await apiClient.put(`/bookings/${id}`, { status: 'cancelled' });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to cancel booking');
-    }
-  }
-
-  async confirmBooking(id: string): Promise<Booking> {
-    try {
-      const response = await apiClient.put(`/bookings/${id}`, { status: 'confirmed' });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to confirm booking');
-    }
-  }
-
-  async completeBooking(id: string): Promise<Booking> {
-    try {
-      const response = await apiClient.put(`/bookings/${id}`, { status: 'completed' });
+      const response = await apiClient.put<Booking>(`/bookings/${bookingId}/complete`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to complete booking');
-    }
-  }
-
-  async getMyBookingsAsSeeker(params?: Omit<BookingSearchParams, 'role'>): Promise<{
-    bookings: Booking[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
-    try {
-      const response = await apiClient.get('/bookings', { 
-        params: { ...params, role: 'seeker' } 
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch your bookings');
-    }
-  }
-
-  async getMyBookingsAsProvider(params?: Omit<BookingSearchParams, 'role'>): Promise<{
-    bookings: Booking[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
-    try {
-      const response = await apiClient.get('/bookings', { 
-        params: { ...params, role: 'provider' } 
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch your service bookings');
     }
   }
 }

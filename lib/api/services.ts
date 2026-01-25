@@ -1,168 +1,89 @@
 import { apiClient } from './config';
 
+export interface ServiceProvider {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  bio: string | null;
+  role: string;
+  latitude: string | null;
+  longitude: string | null;
+  avatar: string | null;
+  verified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Service {
   id: string;
+  providerId: string;
   title: string;
   description: string;
   category: string;
-  price: number;
-  priceType: 'fixed' | 'hourly' | 'negotiable';
+  price: string;
+  priceType: string;
+  availability: string[];
   location: string;
-  latitude?: number;
-  longitude?: number;
-  images?: string[];
-  availability: string;
+  city: string;
   isActive: boolean;
+  latitude: string;
+  longitude: string;
+  h3Index: string;
+  images: string[];
+  approvalStatus: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  provider: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    verified: boolean;
+  provider: ServiceProvider;
+  distance?: number; // Distance in km from user location
+}
+
+export interface ServicesResponse {
+  services: Service[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
 
-export interface CreateServiceRequest {
-  title: string;
-  description: string;
-  category: string;
-  price: number;
-  priceType: 'fixed' | 'hourly' | 'negotiable';
-  location: string;
-  latitude?: number;
-  longitude?: number;
-  availability: string;
-  images?: File[];
-}
-
-export interface UpdateServiceRequest extends Partial<CreateServiceRequest> {
-  isActive?: boolean;
-}
-
-export interface ServiceSearchParams {
-  search?: string;
+export interface SearchServicesParams {
+  lat?: number;
+  lng?: number;
   category?: string;
+  search?: string;
   minPrice?: number;
   maxPrice?: number;
-  latitude?: number;
-  longitude?: number;
-  radius?: number;
+  sortBy?: 'newest' | 'nearest' | 'rating' | 'price_low' | 'price_high';
   page?: number;
   limit?: number;
+  radius?: number; // Max radius in km
 }
 
 class ServicesService {
-  async getServices(params?: ServiceSearchParams): Promise<{
-    services: Service[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
+  async searchServices(params: SearchServicesParams = {}): Promise<ServicesResponse> {
     try {
-      const response = await apiClient.get('/services', { params });
+      const queryParams = new URLSearchParams();
+      
+      if (params.lat !== undefined) queryParams.append('lat', params.lat.toString());
+      if (params.lng !== undefined) queryParams.append('lng', params.lng.toString());
+      if (params.category) queryParams.append('category', params.category);
+      if (params.search) queryParams.append('search', params.search);
+      if (params.minPrice !== undefined) queryParams.append('minPrice', params.minPrice.toString());
+      if (params.maxPrice !== undefined) queryParams.append('maxPrice', params.maxPrice.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.radius) queryParams.append('radius', params.radius.toString());
+
+      const url = `/services${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiClient.get<ServicesResponse>(url);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to fetch services');
-    }
-  }
-
-  async getService(id: string): Promise<Service> {
-    try {
-      const response = await apiClient.get(`/services/${id}`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch service');
-    }
-  }
-
-  async createService(serviceData: CreateServiceRequest): Promise<Service> {
-    try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.entries(serviceData).forEach(([key, value]) => {
-        if (key !== 'images' && value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      });
-      
-      // Add images if provided
-      if (serviceData.images) {
-        serviceData.images.forEach((image) => {
-          formData.append('images', image);
-        });
-      }
-
-      const response = await apiClient.post('/services', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to create service');
-    }
-  }
-
-  async updateService(id: string, serviceData: UpdateServiceRequest): Promise<Service> {
-    try {
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.entries(serviceData).forEach(([key, value]) => {
-        if (key !== 'images' && value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      });
-      
-      // Add images if provided
-      if (serviceData.images) {
-        serviceData.images.forEach((image) => {
-          formData.append('images', image);
-        });
-      }
-
-      const response = await apiClient.put(`/services/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to update service');
-    }
-  }
-
-  async deleteService(id: string): Promise<void> {
-    try {
-      await apiClient.delete(`/services/${id}`);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to delete service');
-    }
-  }
-
-  async getMyServices(): Promise<Service[]> {
-    try {
-      const response = await apiClient.get('/services/my-services');
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch your services');
-    }
-  }
-
-  async searchServices(query: string, params?: Omit<ServiceSearchParams, 'search'>): Promise<{
-    services: Service[];
-    total: number;
-  }> {
-    try {
-      const response = await apiClient.get('/services/search', {
-        params: { search: query, ...params }
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to search services');
     }
   }
 }

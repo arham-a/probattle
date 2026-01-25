@@ -284,6 +284,34 @@ export const CalendarIcon = (props: IconSvgProps) => (
   </svg>
 );
 
+export const ClockIcon = (props: IconSvgProps) => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    focusable="false"
+    height="1em"
+    role="presentation"
+    viewBox="0 0 24 24"
+    width="1em"
+    {...props}
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <polyline
+      points="12,6 12,12 16,14"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    />
+  </svg>
+);
+
 export const MessageIcon = (props: IconSvgProps) => (
   <svg
     aria-hidden="true"

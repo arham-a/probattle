@@ -7,46 +7,59 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  useDisclosure,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
-import { Chip } from "@heroui/chip";
-import { serviceCategories } from "@/data/mockData";
+import { ServiceCategory, PriceType, CreateServiceRequest } from "@/lib/api/my-services";
 
 interface CreateServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onCreateService: (serviceData: CreateServiceRequest) => Promise<void>;
 }
 
-export default function CreateServiceModal({ isOpen, onClose, onSuccess }: CreateServiceModalProps) {
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday", 
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+
+const CATEGORY_OPTIONS = [
+  { key: ServiceCategory.TUTORING, label: "📚 Tutoring", icon: "📚" },
+  { key: ServiceCategory.REPAIR, label: "🔧 Repair", icon: "🔧" },
+  { key: ServiceCategory.CLEANING, label: "🧹 Cleaning", icon: "🧹" },
+  { key: ServiceCategory.GARDENING, label: "🌱 Gardening", icon: "🌱" },
+  { key: ServiceCategory.TECH_SUPPORT, label: "💻 Tech Support", icon: "💻" },
+  { key: ServiceCategory.PET_CARE, label: "🐕 Pet Care", icon: "🐕" },
+  { key: ServiceCategory.DELIVERY, label: "📦 Delivery", icon: "📦" },
+  { key: ServiceCategory.HANDYMAN, label: "🔨 Handyman", icon: "🔨" },
+  { key: ServiceCategory.COOKING, label: "👨‍🍳 Cooking", icon: "👨‍🍳" },
+  { key: ServiceCategory.FITNESS, label: "💪 Fitness", icon: "💪" },
+  { key: ServiceCategory.OTHER, label: "📋 Other", icon: "📋" },
+];
+
+export default function CreateServiceModal({ isOpen, onClose, onSuccess, onCreateService }: CreateServiceModalProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "",
+    category: "" as ServiceCategory | "",
     price: "",
-    priceType: "hourly",
-    location: "",
+    priceType: PriceType.HOURLY,
+    latitude: "",
+    longitude: "",
     availability: [] as string[],
-    tags: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-
-  const availabilityOptions = [
-    { key: "weekdays-morning", label: "Weekdays Morning (9AM-12PM)" },
-    { key: "weekdays-afternoon", label: "Weekdays Afternoon (12PM-5PM)" },
-    { key: "weekdays-evening", label: "Weekdays Evening (5PM-9PM)" },
-    { key: "weekends-morning", label: "Weekends Morning (9AM-12PM)" },
-    { key: "weekends-afternoon", label: "Weekends Afternoon (12PM-5PM)" },
-    { key: "weekends-evening", label: "Weekends Evening (5PM-9PM)" },
-    { key: "weekdays", label: "All Weekdays" },
-    { key: "weekends", label: "All Weekends" },
-  ];
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -57,8 +70,8 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
 
     if (!formData.description.trim()) {
       newErrors.description = "Service description is required";
-    } else if (formData.description.length < 50) {
-      newErrors.description = "Description should be at least 50 characters";
+    } else if (formData.description.length < 20) {
+      newErrors.description = "Description should be at least 20 characters";
     }
 
     if (!formData.category) {
@@ -71,16 +84,60 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
       newErrors.price = "Please enter a valid price";
     }
 
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
+    if (!formData.latitude || !formData.longitude) {
+      newErrors.location = "Please get your current location or enter coordinates";
     }
 
     if (formData.availability.length === 0) {
-      newErrors.availability = "Please select at least one availability option";
+      newErrors.availability = "Please select at least one day";
+    }
+
+    // Validate availability order
+    if (formData.availability.length > 0) {
+      const selectedDaysIndices = formData.availability.map(day => DAYS_OF_WEEK.indexOf(day));
+      const sortedIndices = [...selectedDaysIndices].sort((a, b) => a - b);
+      
+      if (!selectedDaysIndices.every((index, i) => index === sortedIndices[i])) {
+        newErrors.availability = "Please select days in order (Monday to Sunday)";
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: position.coords.latitude.toString(),
+          longitude: position.coords.longitude.toString(),
+        }));
+        setIsGettingLocation(false);
+        
+        // Clear location error if it exists
+        if (errors.location) {
+          setErrors(prev => ({ ...prev, location: "" }));
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert("Unable to get your location. Please enter coordinates manually.");
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,11 +147,19 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Service creation:", formData);
-      alert("Service created successfully!");
-      setIsLoading(false);
+    try {
+      const serviceData: CreateServiceRequest = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        category: formData.category as ServiceCategory,
+        price: formData.price,
+        priceType: formData.priceType,
+        availability: formData.availability,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+      };
+
+      await onCreateService(serviceData);
       
       // Reset form
       setFormData({
@@ -102,16 +167,21 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
         description: "",
         category: "",
         price: "",
-        priceType: "hourly",
-        location: "",
+        priceType: PriceType.HOURLY,
+        latitude: "",
+        longitude: "",
         availability: [],
-        tags: "",
       });
       setErrors({});
       
       if (onSuccess) onSuccess();
       onClose();
-    }, 2000);
+    } catch (error: any) {
+      console.error("Failed to create service:", error);
+      // Error is handled by the parent component
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -122,7 +192,14 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
     }
   };
 
-  const tagArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  const handleAvailabilityChange = (selectedDays: string[]) => {
+    // Sort the selected days according to the week order
+    const sortedDays = selectedDays.sort((a, b) => {
+      return DAYS_OF_WEEK.indexOf(a) - DAYS_OF_WEEK.indexOf(b);
+    });
+    
+    handleInputChange("availability", sortedDays);
+  };
 
   return (
     <Modal 
@@ -155,7 +232,7 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
 
             <Textarea
               label="Service Description"
-              placeholder="Describe your service in detail. What do you offer? What makes you qualified? What can clients expect?"
+              placeholder="Describe your service in detail. What do you offer? What makes you qualified?"
               value={formData.description}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("description", e.target.value)}
               isInvalid={!!errors.description}
@@ -164,33 +241,21 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
               isRequired
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Category"
-                placeholder="Select a category"
-                selectedKeys={formData.category ? [formData.category] : []}
-                onSelectionChange={(keys) => handleInputChange("category", Array.from(keys)[0] as string || "")}
-                isInvalid={!!errors.category}
-                errorMessage={errors.category}
-                isRequired
-              >
-                {serviceCategories.map((category) => (
-                  <SelectItem key={category.key}>
-                    {category.icon} {category.label}
-                  </SelectItem>
-                ))}
-              </Select>
-
-              <Input
-                label="Location/Neighborhood"
-                placeholder="e.g., Downtown District"
-                value={formData.location}
-                onChange={(e) => handleInputChange("location", e.target.value)}
-                isInvalid={!!errors.location}
-                errorMessage={errors.location}
-                isRequired
-              />
-            </div>
+            <Select
+              label="Category"
+              placeholder="Select a category"
+              selectedKeys={formData.category ? [formData.category] : []}
+              onSelectionChange={(keys) => handleInputChange("category", Array.from(keys)[0] as ServiceCategory || "")}
+              isInvalid={!!errors.category}
+              errorMessage={errors.category}
+              isRequired
+            >
+              {CATEGORY_OPTIONS.map((category) => (
+                <SelectItem key={category.key}>
+                  {category.label}
+                </SelectItem>
+              ))}
+            </Select>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
@@ -202,63 +267,91 @@ export default function CreateServiceModal({ isOpen, onClose, onSuccess }: Creat
                 errorMessage={errors.price}
                 startContent="$"
                 type="number"
+                step="0.01"
+                min="0"
                 isRequired
               />
 
               <Select
                 label="Price Type"
                 selectedKeys={[formData.priceType]}
-                onSelectionChange={(keys) => handleInputChange("priceType", Array.from(keys)[0] as string)}
+                onSelectionChange={(keys) => handleInputChange("priceType", Array.from(keys)[0] as PriceType)}
               >
-                <SelectItem key="hourly">Per Hour</SelectItem>
-                <SelectItem key="daily">Per Day</SelectItem>
-                <SelectItem key="fixed">Fixed Price</SelectItem>
+                <SelectItem key={PriceType.HOURLY}>Per Hour</SelectItem>
+                <SelectItem key={PriceType.DAILY}>Per Day</SelectItem>
+                <SelectItem key={PriceType.FIXED}>Fixed Price</SelectItem>
               </Select>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="flat"
+                  color="primary"
+                  onPress={getCurrentLocation}
+                  isLoading={isGettingLocation}
+                  startContent={!isGettingLocation ? "📍" : undefined}
+                >
+                  {isGettingLocation ? "Getting Location..." : "Get Current Location"}
+                </Button>
+                {formData.latitude && formData.longitude && (
+                  <span className="text-sm text-success">
+                    ✓ Location captured
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Latitude"
+                  placeholder="24.9019990"
+                  value={formData.latitude}
+                  onChange={(e) => handleInputChange("latitude", e.target.value)}
+                  type="number"
+                  step="any"
+                />
+
+                <Input
+                  label="Longitude"
+                  placeholder="67.1149670"
+                  value={formData.longitude}
+                  onChange={(e) => handleInputChange("longitude", e.target.value)}
+                  type="number"
+                  step="any"
+                />
+              </div>
             </div>
 
             <div>
               <label className="text-sm font-medium text-default-700 mb-2 block">
-                Availability *
+                Availability (Select days in order) *
               </label>
               <CheckboxGroup
                 value={formData.availability}
-                onValueChange={(value) => handleInputChange("availability", value)}
+                onValueChange={handleAvailabilityChange}
                 isInvalid={!!errors.availability}
                 errorMessage={errors.availability}
                 isRequired
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {availabilityOptions.map((option) => (
-                    <Checkbox key={option.key} value={option.key} size="sm">
-                      {option.label}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <Checkbox key={day} value={day} size="sm">
+                      {day}
                     </Checkbox>
                   ))}
                 </div>
               </CheckboxGroup>
-            </div>
-
-            <div>
-              <Input
-                label="Tags (comma separated)"
-                placeholder="e.g., math, calculus, physics, tutoring"
-                value={formData.tags}
-                onChange={(e) => handleInputChange("tags", e.target.value)}
-                description="Add relevant keywords to help people find your service"
-              />
-              {tagArray.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tagArray.map((tag, index) => (
-                    <Chip key={index} size="sm" variant="flat">
-                      {tag}
-                    </Chip>
-                  ))}
+              {formData.availability.length > 0 && (
+                <div className="mt-2 text-sm text-default-600">
+                  Selected: {formData.availability.join(", ")}
                 </div>
               )}
             </div>
           </ModalBody>
           
           <ModalFooter>
-            <Button variant="flat" onPress={onClose}>
+            <Button variant="flat" onPress={onClose} isDisabled={isLoading}>
               Cancel
             </Button>
             <Button 

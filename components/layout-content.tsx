@@ -6,6 +6,7 @@ import clsx from "clsx";
 
 import { Navbar } from "@/components/navbar";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { AdminNavbar } from "@/components/admin-navbar";
 
 interface LayoutContentProps {
   children: React.ReactNode;
@@ -16,6 +17,9 @@ export function LayoutContent({ children }: LayoutContentProps) {
   
   // Check if current page is an auth page
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/';
+  
+  // Check if current page is an admin page
+  const isAdminPage = pathname.startsWith('/admin');
 
   return (
     <div className="relative flex flex-col h-screen">
@@ -24,8 +28,11 @@ export function LayoutContent({ children }: LayoutContentProps) {
         <div className="absolute top-4 right-4 z-50">
           <ThemeSwitch />
         </div>
+      ) : isAdminPage ? (
+        // Admin pages: Show admin navbar
+        <AdminNavbar />
       ) : (
-        // Regular pages: Show full navbar
+        // Regular pages: Show regular navbar
         <Navbar />
       )}
       

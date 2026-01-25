@@ -29,6 +29,7 @@ export const tokenManager = {
     if (typeof window === 'undefined') return;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    console.log('Tokens updated successfully');
   },
   
   clearTokens: (): void => {
@@ -36,6 +37,7 @@ export const tokenManager = {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    console.log('Tokens cleared');
   },
   
   setUser: (user: any): void => {
@@ -47,6 +49,10 @@ export const tokenManager = {
     if (typeof window === 'undefined') return null;
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  },
+
+  hasValidTokens: (): boolean => {
+    return !!(tokenManager.getAccessToken() && tokenManager.getRefreshToken());
   },
 };
 
@@ -70,7 +76,14 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Check for 403 with "Invalid or expired token" message or 401 unauthorized
+    const shouldRefreshToken = (
+      (error.response?.status === 403 && 
+       error.response?.data?.error === "Invalid or expired token") ||
+      error.response?.status === 401
+    ) && !originalRequest._retry;
+    
+    if (shouldRefreshToken) {
       originalRequest._retry = true;
       
       const refreshToken = tokenManager.getRefreshToken();
@@ -86,8 +99,19 @@ apiClient.interceptors.response.use(
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
-        } catch (refreshError) {
-          // Refresh failed, redirect to login
+        } catch (refreshError: any) {
+          // Check if refresh also failed with 403 - logout user
+          if (refreshError.response?.status === 403) {
+            console.log('Refresh token also expired, logging out user');
+            tokenManager.clearTokens();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            return Promise.reject(new Error('Session expired. Please log in again.'));
+          }
+          
+          // Other refresh errors - still logout for security
+          console.error('Token refresh failed:', refreshError);
           tokenManager.clearTokens();
           if (typeof window !== 'undefined') {
             window.location.href = '/login';
@@ -96,10 +120,12 @@ apiClient.interceptors.response.use(
         }
       } else {
         // No refresh token, redirect to login
+        console.log('No refresh token available, redirecting to login');
         tokenManager.clearTokens();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
+        return Promise.reject(new Error('No authentication token available'));
       }
     }
     
