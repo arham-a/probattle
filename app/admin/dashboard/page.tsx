@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -16,6 +16,7 @@ import { useAdminServices } from "@/lib/hooks/useAdminServices";
 import { AdminServicesParams } from "@/lib/api/admin";
 import { serviceCategories } from "@/data/mockData";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api/config";
 
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -25,6 +26,8 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'lowest_rating' | 'highest_rating' | 'most_views' | 'least_views' | 'newest' | 'oldest'>('lowest_rating');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [providerCategories, setProviderCategories] = useState<Record<string, 'Trusted Professional' | 'Needs Review' | 'Low Reliability'>>({});
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -33,12 +36,51 @@ export default function AdminDashboard() {
     }
   }, [user, authLoading, router]);
 
+  // Fetch provider categories
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchProviderCategories();
+    }
+  }, [user]);
+
   // Fetch services when filters change
   useEffect(() => {
     if (user?.role === 'admin') {
       performFetch();
     }
   }, [currentPage, sortBy, user]);
+
+  const fetchProviderCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const response = await apiClient.get('/admin/providers/categorize');
+      const data = response.data;
+      
+      // Create a map of provider ID to category
+      const categoryMap: Record<string, 'Trusted Professional' | 'Needs Review' | 'Low Reliability'> = {};
+      
+      // Map trusted professionals
+      data.categories.trustedProfessionals?.forEach((provider: any) => {
+        categoryMap[provider.id] = 'Trusted Professional';
+      });
+      
+      // Map needs review
+      data.categories.needsReview?.forEach((provider: any) => {
+        categoryMap[provider.id] = 'Needs Review';
+      });
+      
+      // Map low reliability
+      data.categories.lowReliability?.forEach((provider: any) => {
+        categoryMap[provider.id] = 'Low Reliability';
+      });
+      
+      setProviderCategories(categoryMap);
+    } catch (error) {
+      console.error('Failed to fetch provider categories:', error);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const performFetch = async () => {
     const params: AdminServicesParams = {
@@ -90,6 +132,23 @@ export default function AdminDashboard() {
         className={`w-4 h-4 ${i < Math.floor(rating) ? 'text-warning fill-current' : 'text-default-300'}`}
       />
     ));
+  };
+
+  const getProviderCategory = (providerId: string): 'Trusted Professional' | 'Needs Review' | 'Low Reliability' | null => {
+    return providerCategories[providerId] || null;
+  };
+
+  const getCategoryColor = (category: string): "success" | "warning" | "danger" => {
+    switch (category) {
+      case 'Trusted Professional':
+        return 'success';
+      case 'Needs Review':
+        return 'warning';
+      case 'Low Reliability':
+        return 'danger';
+      default:
+        return 'success'; // Fallback to success color
+    }
   };
 
   if (authLoading) {
@@ -192,7 +251,7 @@ export default function AdminDashboard() {
                           <div>
                             <h4 className="font-semibold text-lg">{service.title}</h4>
                             <p className="text-sm text-default-600">by {service.provider.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Chip
                                 size="sm"
                                 variant="flat"
@@ -206,6 +265,15 @@ export default function AdminDashboard() {
                               {service.provider.verified && (
                                 <Badge color="success" size="sm">
                                   ✓ Verified
+                                </Badge>
+                              )}
+                              {getProviderCategory(service.provider.id) && (
+                                <Badge 
+                                  color={getCategoryColor(getProviderCategory(service.provider.id)!)}
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {getProviderCategory(service.provider.id)}
                                 </Badge>
                               )}
                             </div>
