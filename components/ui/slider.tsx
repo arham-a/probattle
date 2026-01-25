@@ -45,7 +45,7 @@ export const Slider: React.FC<SliderProps> = ({
           onChange={(e) => onChange(Number(e.target.value))}
           className="w-full h-2 bg-default-200 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, #006FEE 0%, #006FEE ${percentage}%, #e4e4e7 ${percentage}%, #e4e4e7 100%)`
+            background: `linear-gradient(to right, #7828c8 0%, #7828c8 ${percentage}%, #e4e4e7 ${percentage}%, #e4e4e7 100%)`
           }}
         />
         <style jsx>{`
@@ -54,7 +54,7 @@ export const Slider: React.FC<SliderProps> = ({
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #006FEE;
+            background: #7828c8;
             cursor: pointer;
             border: 2px solid #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -63,7 +63,7 @@ export const Slider: React.FC<SliderProps> = ({
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #006FEE;
+            background: #7828c8;
             cursor: pointer;
             border: 2px solid #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

@@ -190,15 +190,15 @@ export const mockBookings: BookingRequest[] = [
 ];
 
 export const serviceCategories = [
-  { key: 'tutoring', label: 'Tutoring', icon: '📚' },
-  { key: 'repair', label: 'Repair', icon: '🔧' },
-  { key: 'cleaning', label: 'Cleaning', icon: '🧹' },
-  { key: 'gardening', label: 'Gardening', icon: '🌱' },
-  { key: 'tech-support', label: 'Tech Support', icon: '💻' },
-  { key: 'pet-care', label: 'Pet Care', icon: '🐕' },
-  { key: 'delivery', label: 'Delivery', icon: '📦' },
-  { key: 'handyman', label: 'Handyman', icon: '🔨' },
-  { key: 'cooking', label: 'Cooking', icon: '👨‍🍳' },
-  { key: 'fitness', label: 'Fitness', icon: '💪' },
-  { key: 'other', label: 'Other', icon: '⭐' },
+  { key: 'tutoring', label: 'Tutoring', icon: '' },
+  { key: 'repair', label: 'Repair', icon: '' },
+  { key: 'cleaning', label: 'Cleaning', icon: '' },
+  { key: 'gardening', label: 'Gardening', icon: '' },
+  { key: 'tech-support', label: 'Tech Support', icon: '' },
+  { key: 'pet-care', label: 'Pet Care', icon: '' },
+  { key: 'delivery', label: 'Delivery', icon: '' },
+  { key: 'handyman', label: 'Handyman', icon: '' },
+  { key: 'cooking', label: 'Cooking', icon: '' },
+  { key: 'fitness', label: 'Fitness', icon: '' },
+  { key: 'other', label: 'Other', icon: '' },
 ];

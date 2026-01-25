@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Link } from "@heroui/link";
@@ -13,11 +12,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthWrapper } from "@/components/auth/auth-wrapper";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -52,10 +52,8 @@ export default function RegisterPage() {
     { value: "+7", label: "+7 (Russia)" },
   ];
 
-  // Get user's current location
   const getCurrentLocation = () => {
     setIsGettingLocation(true);
-    
     if (!navigator.geolocation) {
       setErrors(prev => ({ ...prev, location: "Geolocation is not supported by this browser" }));
       setIsGettingLocation(false);
@@ -70,32 +68,19 @@ export default function RegisterPage() {
           longitude: position.coords.longitude,
         }));
         setIsGettingLocation(false);
-        // Clear location error if it exists
-        if (errors.location) {
-          setErrors(prev => ({ ...prev, location: "" }));
-        }
+        if (errors.location) setErrors(prev => ({ ...prev, location: "" }));
       },
       (error) => {
         let errorMessage = "Unable to get location";
         switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access denied by user";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information unavailable";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out";
-            break;
+          case error.PERMISSION_DENIED: errorMessage = "Location access denied"; break;
+          case error.POSITION_UNAVAILABLE: errorMessage = "Location unavailable"; break;
+          case error.TIMEOUT: errorMessage = "Location request timed out"; break;
         }
         setErrors(prev => ({ ...prev, location: errorMessage }));
         setIsGettingLocation(false);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
@@ -103,71 +88,72 @@ export default function RegisterPage() {
     {
       value: "seeker",
       title: "I'm looking for services",
-      description: "Find trusted providers in your neighborhood",
-      icon: "🔍",
-      benefits: ["Browse local services", "Book trusted providers", "Rate and review"]
+      description: "Find trusted skilled neighbors",
+      icon: (
+        <svg fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="32">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" x2="16.65" y1="21" y2="16.65"></line>
+        </svg>
+      ),
     },
     {
       value: "provider",
       title: "I want to offer services",
-      description: "Share your skills with the community",
-      icon: "🛠️",
-      benefits: ["List your services", "Connect with neighbors", "Earn from your skills"]
+      description: "Share your skills with community",
+      icon: (
+        <svg fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="32">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4-1.4l-1.6-1.6a1 1 0 0 0-1.4 0zM7.7 13.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4-1.4l-1.6-1.6a1 1 0 0 0-1.4 0z"></path>
+          <path d="M3 21l6-6M21 3l-6 6"></path>
+        </svg>
+      ),
     },
     {
       value: "both",
-      title: "Both - I want to offer and find services",
-      description: "Get the full Neighbourly experience",
-      icon: "🤝",
-      benefits: ["Complete marketplace access", "Flexible role switching", "Maximum community engagement"]
+      title: "I want both",
+      description: "Full marketplace access",
+      icon: (
+        <svg fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="32">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      ),
     }
   ];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
+    if (!formData.firstName.trim()) newErrors.firstName = "Required";
+    if (!formData.lastName.trim()) newErrors.lastName = "Required";
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "Required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+      newErrors.email = "Invalid email";
     }
 
-    // Phone number validation
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
+      newErrors.phoneNumber = "Required";
     } else {
-      // Remove any non-digit characters for validation
       const cleanPhone = formData.phoneNumber.replace(/\D/g, '');
       if (cleanPhone.length < 7 || cleanPhone.length > 15) {
-        newErrors.phoneNumber = "Phone number must be between 7-15 digits";
+        newErrors.phoneNumber = "7-15 digits required";
       }
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
+      newErrors.password = "Required";
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "Min 6 chars";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Mismatch";
     }
 
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-
-    if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = "You must agree to the terms and conditions";
-    }
+    if (!formData.location.trim()) newErrors.location = "Required";
+    if (!formData.agreeToTerms) newErrors.agreeToTerms = "Required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -175,15 +161,11 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
     try {
-      // Combine phone prefix and number
       const fullPhoneNumber = `${formData.phonePrefix}${formData.phoneNumber.replace(/\D/g, '')}`;
-      
       await register({
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
@@ -194,11 +176,9 @@ export default function RegisterPage() {
         latitude: formData.latitude || undefined,
         longitude: formData.longitude || undefined,
       });
-      
-      // Redirect to dashboard on successful registration
       router.push("/dashboard");
     } catch (error: any) {
-      setErrors({ general: error.message || "Registration failed. Please try again." });
+      setErrors({ general: error.message || "Registration failed" });
     } finally {
       setIsLoading(false);
     }
@@ -206,316 +186,248 @@ export default function RegisterPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
-    }
-    // Clear general error when user makes changes
-    if (errors.general) {
-      setErrors(prev => ({ ...prev, general: "" }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
+    if (errors.general) setErrors(prev => ({ ...prev, general: "" }));
   };
 
-  const selectedRoleOption = roleOptions.find(option => option.value === formData.role);
+  const [isVisible, setIsVisible] = useState(false);
+  const toggleVisibility = () => setIsVisible(!isVisible);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 py-8">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Join Neighbourly</h1>
-          <p className="text-xl text-default-600">
-            Connect with your community and start sharing skills, tools, and services
-          </p>
+    <AuthWrapper
+      title="Create Account"
+      subtitle="Join the most helpful neighborhood community"
+      maxWidth="800px"
+    >
+      <form onSubmit={handleSubmit} className="space-y-10">
+        {errors.general && (
+          <div className="bg-danger/10 border border-danger/20 rounded-xl p-4">
+            <p className="text-danger text-sm font-medium">{errors.general}</p>
+          </div>
+        )}
+
+        {/* Section 1: Personal Info */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">Personal Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Input
+              label="First Name"
+              labelPlacement="outside"
+              placeholder="John"
+              variant="flat"
+              radius="lg"
+              size="lg"
+              value={formData.firstName}
+              onChange={(e) => handleInputChange("firstName", e.target.value)}
+              isInvalid={!!errors.firstName}
+              errorMessage={errors.firstName}
+              isRequired
+              classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+            />
+            <Input
+              label="Last Name"
+              labelPlacement="outside"
+              placeholder="Doe"
+              variant="flat"
+              radius="lg"
+              size="lg"
+              value={formData.lastName}
+              onChange={(e) => handleInputChange("lastName", e.target.value)}
+              isInvalid={!!errors.lastName}
+              errorMessage={errors.lastName}
+              isRequired
+              classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+            />
+          </div>
+          <Input
+            label="Email"
+            labelPlacement="outside"
+            placeholder="john@example.com"
+            type="email"
+            variant="flat"
+            radius="lg"
+            size="lg"
+            value={formData.email}
+            onChange={(e) => handleInputChange("email", e.target.value)}
+            isInvalid={!!errors.email}
+            errorMessage={errors.email}
+            isRequired
+            classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+          />
         </div>
 
-        {/* Registration Form */}
-        <Card>
-          <CardHeader className="pb-4">
-            <h2 className="text-2xl font-semibold">Create Your Account</h2>
-          </CardHeader>
-          <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {errors.general && (
-                <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
-                  <p className="text-danger text-sm">{errors.general}</p>
-                </div>
-              )}
-
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Personal Information</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="First Name"
-                    placeholder="Enter your first name"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    isInvalid={!!errors.firstName}
-                    errorMessage={errors.firstName}
-                    isRequired
-                  />
-                  <Input
-                    label="Last Name"
-                    placeholder="Enter your last name"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    isInvalid={!!errors.lastName}
-                    errorMessage={errors.lastName}
-                    isRequired
-                  />
-                </div>
-
-                <Input
-                  label="Email Address"
-                  placeholder="Enter your email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  isInvalid={!!errors.email}
-                  errorMessage={errors.email}
-                  isRequired
-                />
-
-                {/* Phone Number Fields */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number *</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <Select
-                      placeholder="Prefix"
-                      selectedKeys={[formData.phonePrefix]}
-                      onSelectionChange={(keys) => {
-                        const selectedKey = Array.from(keys)[0] as string;
-                        handleInputChange("phonePrefix", selectedKey);
-                      }}
-                      size="md"
-                    >
-                      {phonePrefixes.map((prefix) => (
-                        <SelectItem key={prefix.value}>
-                          {prefix.label}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                    <div className="md:col-span-2">
-                      <Input
-                        placeholder="Enter phone number"
-                        type="tel"
-                        value={formData.phoneNumber}
-                        onChange={(e) => {
-                          // Allow only digits, spaces, dashes, and parentheses
-                          const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
-                          handleInputChange("phoneNumber", value);
-                        }}
-                        isInvalid={!!errors.phoneNumber}
-                        errorMessage={errors.phoneNumber}
-                        description="Enter your phone number without country code"
-                      />
-                    </div>
-                  </div>
-                  {formData.phonePrefix && formData.phoneNumber && (
-                    <p className="text-xs text-default-500">
-                      Full number: {formData.phonePrefix}{formData.phoneNumber.replace(/\D/g, '')}
-                    </p>
-                  )}
-                </div>
-
-                {/* Location Field with Get Location Button */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Location *</label>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      onPress={getCurrentLocation}
-                      isLoading={isGettingLocation}
-                      startContent={!isGettingLocation ? "📍" : undefined}
-                    >
-                      {isGettingLocation ? "Getting Location..." : "Use Current Location"}
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="e.g., Downtown District, Suburban Area"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange("location", e.target.value)}
-                    isInvalid={!!errors.location}
-                    errorMessage={errors.location}
-                    description="This helps neighbors find services near them"
-                    isRequired
-                  />
-                  {formData.latitude && formData.longitude && (
-                    <p className="text-xs text-success">
-                      ✓ Location detected: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
-                    </p>
-                  )}
-                </div>
-
-                <Textarea
-                  label="Bio (Optional)"
-                  placeholder="Tell your neighbors about yourself, your skills, or what you're looking for..."
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange("bio", e.target.value)}
-                  minRows={3}
-                  description="A brief introduction to help build trust in the community"
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Password"
-                    placeholder="Create a password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    isInvalid={!!errors.password}
-                    errorMessage={errors.password}
-                    description="At least 6 characters"
-                    isRequired
-                  />
-                  <Input
-                    label="Confirm Password"
-                    placeholder="Confirm your password"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    isInvalid={!!errors.confirmPassword}
-                    errorMessage={errors.confirmPassword}
-                    isRequired
-                  />
-                </div>
-              </div>
-
-              <Divider />
-
-              {/* Role Selection */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">How do you want to use Neighbourly?</h3>
-                
-                <RadioGroup
-                  value={formData.role}
-                  onValueChange={(value) => handleInputChange("role", value)}
-                  className="space-y-3"
-                >
-                  {roleOptions.map((option) => (
-                    <div key={option.value} className="relative">
-                      <Radio
-                        value={option.value}
-                        classNames={{
-                          base: "inline-flex m-0 bg-content1 hover:bg-content2 items-center justify-between flex-row-reverse max-w-full cursor-pointer rounded-lg gap-4 p-4 border-2 border-transparent data-[selected=true]:border-primary",
-                          wrapper: "hidden"
-                        }}
-                      >
-                        <div className="flex items-start gap-3 w-full">
-                          <span className="text-2xl">{option.icon}</span>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-base">{option.title}</h4>
-                            <p className="text-sm text-default-600 mb-2">{option.description}</p>
-                            <div className="flex flex-wrap gap-1">
-                              {option.benefits.map((benefit, index) => (
-                                <Chip key={index} size="sm" variant="flat" color="primary">
-                                  {benefit}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </Radio>
-                    </div>
-                  ))}
-                </RadioGroup>
-
-                {selectedRoleOption && (
-                  <div className="bg-primary/10 p-4 rounded-lg">
-                    <p className="text-sm text-primary font-medium">
-                      Great choice! As a {selectedRoleOption.value === 'both' ? 'community member' : selectedRoleOption.value}, 
-                      you'll be able to {selectedRoleOption.description.toLowerCase()}.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <Divider />
-
-              {/* Terms and Newsletter */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Switch
-                    isSelected={formData.agreeToTerms}
-                    onValueChange={(checked) => handleInputChange("agreeToTerms", checked)}
-                    color={errors.agreeToTerms ? "danger" : "primary"}
-                  >
-                    <span className="text-sm">
-                      I agree to the{" "}
-                      <Link as={NextLink} href="/terms" color="primary" size="sm">
-                        Terms of Service
-                      </Link>{" "}
-                      and{" "}
-                      <Link as={NextLink} href="/privacy" color="primary" size="sm">
-                        Privacy Policy
-                      </Link>
-                    </span>
-                  </Switch>
-                  {errors.agreeToTerms && (
-                    <p className="text-danger text-sm">{errors.agreeToTerms}</p>
-                  )}
-                </div>
-
-                <Switch
-                  isSelected={formData.subscribeNewsletter}
-                  onValueChange={(checked) => handleInputChange("subscribeNewsletter", checked)}
-                  color="primary"
-                >
-                  <span className="text-sm">
-                    Send me community updates and service recommendations
-                  </span>
-                </Switch>
-              </div>
-
-              <Button
-                type="submit"
-                color="primary"
-                className="w-full"
+        {/* Section 2: Contact & Location */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">Contact & Location</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select
+              label="Prefix"
+              labelPlacement="outside"
+              selectedKeys={[formData.phonePrefix]}
+              onSelectionChange={(keys) => handleInputChange("phonePrefix", Array.from(keys)[0])}
+              variant="flat"
+              radius="lg"
+              size="lg"
+              classNames={{ label: "font-semibold mb-2", trigger: "h-12" }}
+            >
+              {phonePrefixes.map((p) => <SelectItem key={p.value} textValue={p.value}>{p.label}</SelectItem>)}
+            </Select>
+            <div className="md:col-span-2">
+              <Input
+                label="Phone"
+                labelPlacement="outside"
+                placeholder="000 000 0000"
+                variant="flat"
+                radius="lg"
                 size="lg"
-                isLoading={isLoading}
-              >
-                {isLoading ? "Creating Account..." : "Join Neighbourly"}
-              </Button>
-            </form>
-
-            <Divider className="my-6" />
-
-            <div className="text-center">
-              <p className="text-sm text-default-600">
-                Already have an account?{" "}
-                <Link as={NextLink} href="/login" color="primary">
-                  Sign in here
-                </Link>
-              </p>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Trust Indicators */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-default-600 mb-3">
-            Join thousands of community members who trust Neighbourly
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-success">🔒</span>
-              <span className="text-default-600">Secure & Private</span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-primary">✓</span>
-              <span className="text-default-600">Verified Community</span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-warning">⭐</span>
-              <span className="text-default-600">Trusted Reviews</span>
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange("phoneNumber", e.target.value.replace(/[^\d\s\-\(\)]/g, ''))}
+                isInvalid={!!errors.phoneNumber}
+                errorMessage={errors.phoneNumber}
+                classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+              />
             </div>
           </div>
+
+          <Input
+            label="Location"
+            labelPlacement="outside"
+            placeholder="Your neighborhood"
+            variant="flat"
+            radius="lg"
+            size="lg"
+            value={formData.location}
+            onChange={(e) => handleInputChange("location", e.target.value)}
+            isInvalid={!!errors.location}
+            errorMessage={errors.location}
+            isRequired
+            classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+            endContent={
+              <Button
+                size="sm"
+                variant="light"
+                isIconOnly
+                onPress={getCurrentLocation}
+                isLoading={isGettingLocation}
+                className="text-primary hover:bg-primary/10"
+              >
+                <svg fill="none" height="1.2em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1.2em"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              </Button>
+            }
+          />
         </div>
-      </div>
-    </div>
+
+        {/* Section 3: Role Selection */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">Choose Your Role</h3>
+          <RadioGroup
+            value={formData.role}
+            onValueChange={(v) => handleInputChange("role", v)}
+            orientation="horizontal"
+            className="w-full gap-6"
+          >
+            {roleOptions.map((opt) => (
+              <Radio
+                key={opt.value}
+                value={opt.value}
+                classNames={{
+                  base: `flex-1 max-w-full m-0 bg-default-100 hover:bg-default-200 cursor-pointer rounded-xl border-2 border-transparent data-[selected=true]:border-primary transition-all p-6`,
+                  labelWrapper: "w-full m-0",
+                  wrapper: "hidden"
+                }}
+              >
+                <div className="flex flex-col items-center justify-center text-center w-full gap-3">
+                  <div className="text-primary">
+                    {opt.icon}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold text-sm text-default-700">{opt.title}</span>
+                    <span className="text-xs text-default-500 leading-tight">{opt.description}</span>
+                  </div>
+                </div>
+              </Radio>
+            ))}
+          </RadioGroup>
+        </div>
+
+        {/* Section 4: Security */}
+        <div className="space-y-6">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">Security</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Input
+              label="Password"
+              labelPlacement="outside"
+              placeholder="••••••••"
+              type={isVisible ? "text" : "password"}
+              variant="flat"
+              radius="lg"
+              size="lg"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              isInvalid={!!errors.password}
+              errorMessage={errors.password}
+              isRequired
+              endContent={
+                <button className="focus:outline-none" type="button" onClick={toggleVisibility} aria-label="toggle password visibility">
+                  {isVisible ? (
+                    <svg className="text-2xl text-default-400 pointer-events-none" fill="none" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" x2="23" y1="1" y2="23"></line></svg>
+                  ) : (
+                    <svg className="text-2xl text-default-400 pointer-events-none" fill="none" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  )}
+                </button>
+              }
+              classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+            />
+            <Input
+              label="Confirm Password"
+              labelPlacement="outside"
+              placeholder="••••••••"
+              type={isVisible ? "text" : "password"}
+              variant="flat"
+              radius="lg"
+              size="lg"
+              value={formData.confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              isInvalid={!!errors.confirmPassword}
+              errorMessage={errors.confirmPassword}
+              isRequired
+              classNames={{ label: "font-semibold mb-2", inputWrapper: "h-12" }}
+            />
+          </div>
+        </div>
+
+        <Divider className="my-6 opacity-50" />
+
+        <div className="space-y-6">
+          <Switch
+            isSelected={formData.agreeToTerms}
+            onValueChange={(v) => handleInputChange("agreeToTerms", v)}
+            size="sm"
+            color="primary"
+          >
+            <span className="text-xs text-default-500 font-medium">I agree to the <Link size="sm" className="text-xs font-bold text-primary underline">Terms of Service</Link> & <Link size="sm" className="text-xs font-bold text-primary underline">Privacy Policy</Link></span>
+          </Switch>
+
+          <Button
+            type="submit"
+            color="primary"
+            className="w-full h-14 text-xl font-bold shadow-xl shadow-primary/20"
+            radius="lg"
+            isLoading={isLoading}
+          >
+            {isLoading ? "Creating Account..." : "Join the Community"}
+          </Button>
+        </div>
+
+        <div className="text-center pb-4">
+          <p className="text-default-500 font-semibold">
+            Already have an account?{" "}
+            <Link as={NextLink} href="/login" className="text-primary font-bold hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </div>
+      </form>
+    </AuthWrapper>
   );
 }
