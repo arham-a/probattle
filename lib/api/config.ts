@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // Base API configuration
 // export const API_BASE_URL = 'http://localhost:5000/api';
-export const API_BASE_URL = 'https://probattle-26-server.vercel.app/api';
+// export const API_BASE_URL = 'https://probattle-26-server.vercel.app/api';
+export const API_BASE_URL = 'https://probattle-26-server.onrender.com/api';
 
 // Create axios instance with default config
 export const apiClient = axios.create({

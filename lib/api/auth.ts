@@ -118,6 +118,10 @@ class AuthService {
     return tokenManager.getUser();
   }
 
+  getAccessToken(): string | null {
+    return tokenManager.getAccessToken();
+  }
+
   isAuthenticated(): boolean {
     return !!tokenManager.getAccessToken();
   }

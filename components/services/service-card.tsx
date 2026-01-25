@@ -1,25 +1,59 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Avatar } from "@heroui/avatar";
 import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
+import { Spinner } from "@heroui/spinner";
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { LocationIcon, StarIcon } from "@/components/icons";
 import { Service } from "@/lib/api/services";
 import { serviceCategories } from "@/data/mockData";
+import { apiClient } from "@/lib/api/config";
 
 interface ServiceCardProps {
     service: Service;
     userRole: string;
+    currentUserId?: string;
     onBook: (service: Service) => void;
     formatPrice: (price: string, type: string) => string;
 }
 
-export const ServiceCard = ({ service, userRole, onBook, formatPrice }: ServiceCardProps) => {
+export const ServiceCard = ({ service, userRole, currentUserId, onBook, formatPrice }: ServiceCardProps) => {
+    const router = useRouter();
     const categoryIcon = serviceCategories.find(cat => cat.key === service.category)?.icon;
+    const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+    const handleMessageProvider = async () => {
+        try {
+            setIsSendingMessage(true);
+            
+            // Send an initial message to create the conversation
+            const initialMessage = `Hi! I'm interested in your service: "${service.title}". Can you provide more details?`;
+            
+            // Create the message via API
+            await apiClient.post('/messages/send', {
+                receiverId: service.provider.id,
+                message: initialMessage,
+                serviceId: service.id,
+            });
+
+            // Navigate to messages page with the provider selected
+            router.push(`/messages?userId=${service.provider.id}`);
+        } catch (error) {
+            console.error('Error sending initial message:', error);
+            // Still navigate to messages page even if message fails
+            router.push(`/messages?userId=${service.provider.id}`);
+        } finally {
+            setIsSendingMessage(false);
+        }
+    };
+
+    // Don't show message button if viewing own service
+    const canMessage = currentUserId && currentUserId !== service.provider.id;
 
     return (
         <Card className="border-none bg-background/60 dark:bg-default-100/50 backdrop-blur-md shadow-lg hover:shadow-2xl transition-all h-full group overflow-hidden" radius="lg">
@@ -80,10 +114,13 @@ export const ServiceCard = ({ service, userRole, onBook, formatPrice }: ServiceC
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-default-100 dark:border-default-100/10 flex items-center justify-between">
-                    <span className="text-xl font-black text-primary">
-                        {formatPrice(service.price, service.priceType)}
-                    </span>
+                <div className="pt-4 border-t border-default-100 dark:border-default-100/10">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-xl font-black text-primary">
+                            {formatPrice(service.price, service.priceType)}
+                        </span>
+                    </div>
+                    
                     <div className="flex gap-2">
                         <Button
                             as={NextLink}
@@ -91,19 +128,34 @@ export const ServiceCard = ({ service, userRole, onBook, formatPrice }: ServiceC
                             variant="flat"
                             size="sm"
                             radius="lg"
-                            className="font-bold text-xs"
+                            className="font-bold text-xs flex-1"
                         >
                             Details
                         </Button>
+                        
+                        {canMessage && (
+                            <Button
+                                variant="bordered"
+                                size="sm"
+                                radius="lg"
+                                className="font-bold text-xs"
+                                onPress={handleMessageProvider}
+                                isLoading={isSendingMessage}
+                                isDisabled={isSendingMessage}
+                            >
+                                {isSendingMessage ? <Spinner size="sm" /> : '💬'}
+                            </Button>
+                        )}
+                        
                         {(userRole === 'seeker' || userRole === 'both') && (
                             <Button
                                 color="primary"
                                 size="sm"
                                 radius="lg"
-                                className="font-bold text-xs shadow-lg shadow-primary/20"
+                                className="font-bold text-xs shadow-lg shadow-primary/20 flex-1"
                                 onPress={() => onBook(service)}
                             >
-                                Book Now
+                                Book
                             </Button>
                         )}
                     </div>

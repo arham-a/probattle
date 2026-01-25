@@ -160,6 +160,7 @@ function ServicesContent() {
                 key={s.id}
                 service={s}
                 userRole={user.role}
+                currentUserId={user.id}
                 formatPrice={formatPrice}
                 onBook={(svc) => { setSelectedService(svc); onBookingOpen(); }}
               />

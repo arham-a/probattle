@@ -5,6 +5,7 @@ import { authService, User, LoginRequest, RegisterRequest } from '@/lib/api/auth
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
@@ -29,11 +30,14 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = () => {
     const currentUser = authService.getCurrentUser();
+    const currentToken = authService.getAccessToken();
     setUser(currentUser);
+    setToken(currentToken);
   };
 
   useEffect(() => {
@@ -41,18 +45,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = () => {
       try {
         const currentUser = authService.getCurrentUser();
+        const currentToken = authService.getAccessToken();
         const isAuth = authService.isAuthenticated();
         
-        if (isAuth && currentUser) {
+        if (isAuth && currentUser && currentToken) {
           console.log('User authenticated on app start:', currentUser.email);
           setUser(currentUser);
+          setToken(currentToken);
         } else {
           console.log('No valid authentication found on app start');
           setUser(null);
+          setToken(null);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         setUser(null);
+        setToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -65,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (e.key === 'accessToken' && !e.newValue) {
         console.log('Token removed in another tab, logging out');
         setUser(null);
+        setToken(null);
       }
     };
 
@@ -79,6 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       setUser(response.user);
+      setToken(authService.getAccessToken());
       
       // Redirect admin users to dashboard
       if (response.user.role === 'admin') {
@@ -86,6 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       setUser(null);
+      setToken(null);
       throw error;
     } finally {
       setIsLoading(false);
@@ -97,8 +108,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.register(userData);
       setUser(response.user);
+      setToken(authService.getAccessToken());
     } catch (error) {
       setUser(null);
+      setToken(null);
       throw error;
     } finally {
       setIsLoading(false);
@@ -110,10 +123,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authService.logout();
       setUser(null);
+      setToken(null);
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state even if server logout fails
       setUser(null);
+      setToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    token,
     isLoading,
     isAuthenticated: !!user,
     login,

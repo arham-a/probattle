@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -10,16 +11,16 @@ import {
   NavbarMenuItem,
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import { Avatar } from "@heroui/avatar";
+import { Badge } from "@heroui/badge";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
-import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUnreadCount } from "@/lib/api/messages";
 
 // Neighbourly Logo Component
 const NeighbourlyLogo = () => (
@@ -46,6 +47,27 @@ const NeighbourlyLogo = () => (
 export const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUnreadCount();
+      
+      // Refresh unread count every 30 seconds
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, user]);
+
+  const loadUnreadCount = async () => {
+    try {
+      const data = await getUnreadCount();
+      setUnreadCount(data.count);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   const getRoleBasedNavItems = () => {
     if (!user) return [];
@@ -136,6 +158,53 @@ export const Navbar = () => {
           <ThemeSwitch />
         </NavbarItem>
 
+        {isAuthenticated && (
+          <NavbarItem>
+            <Button
+              as={NextLink}
+              href="/messages"
+              isIconOnly
+              variant="light"
+              className="relative"
+              aria-label="Messages"
+            >
+              {unreadCount > 0 ? (
+                <Badge content={unreadCount} color="danger" size="sm" placement="top-right">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                    />
+                  </svg>
+                </Badge>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                  />
+                </svg>
+              )}
+            </Button>
+          </NavbarItem>
+        )}
+
         {!isAuthenticated ? (
           <>
             <NavbarItem className="hidden md:flex">
@@ -219,6 +288,21 @@ export const Navbar = () => {
 
               <div className="space-y-4">
                 <p className="text-[10px] font-black uppercase text-primary tracking-[0.2em] mb-6">Navigation</p>
+                
+                <NavbarMenuItem>
+                  <NextLink
+                    className="text-2xl font-black tracking-tighter hover:text-primary transition-colors block flex items-center gap-3"
+                    href="/messages"
+                  >
+                    Messages
+                    {unreadCount > 0 && (
+                      <Badge content={unreadCount} color="danger" size="sm">
+                        <span className="w-6 h-6" />
+                      </Badge>
+                    )}
+                  </NextLink>
+                </NavbarMenuItem>
+
                 {navItems.map((item) => (
                   <NavbarMenuItem key={item.href}>
                     <NextLink
