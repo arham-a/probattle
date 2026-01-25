@@ -26,8 +26,6 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'lowest_rating' | 'highest_rating' | 'most_views' | 'least_views' | 'newest' | 'oldest'>('lowest_rating');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [providerCategories, setProviderCategories] = useState<Record<string, 'Trusted Professional' | 'Needs Review' | 'Low Reliability'>>({});
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -36,51 +34,12 @@ export default function AdminDashboard() {
     }
   }, [user, authLoading, router]);
 
-  // Fetch provider categories
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      fetchProviderCategories();
-    }
-  }, [user]);
-
   // Fetch services when filters change
   useEffect(() => {
     if (user?.role === 'admin') {
       performFetch();
     }
   }, [currentPage, sortBy, user]);
-
-  const fetchProviderCategories = async () => {
-    setCategoriesLoading(true);
-    try {
-      const response = await apiClient.get('/admin/providers/categorize');
-      const data = response.data;
-      
-      // Create a map of provider ID to category
-      const categoryMap: Record<string, 'Trusted Professional' | 'Needs Review' | 'Low Reliability'> = {};
-      
-      // Map trusted professionals
-      data.categories.trustedProfessionals?.forEach((provider: any) => {
-        categoryMap[provider.id] = 'Trusted Professional';
-      });
-      
-      // Map needs review
-      data.categories.needsReview?.forEach((provider: any) => {
-        categoryMap[provider.id] = 'Needs Review';
-      });
-      
-      // Map low reliability
-      data.categories.lowReliability?.forEach((provider: any) => {
-        categoryMap[provider.id] = 'Low Reliability';
-      });
-      
-      setProviderCategories(categoryMap);
-    } catch (error) {
-      console.error('Failed to fetch provider categories:', error);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
 
   const performFetch = async () => {
     const params: AdminServicesParams = {
@@ -134,10 +93,6 @@ export default function AdminDashboard() {
     ));
   };
 
-  const getProviderCategory = (providerId: string): 'Trusted Professional' | 'Needs Review' | 'Low Reliability' | null => {
-    return providerCategories[providerId] || null;
-  };
-
   const getCategoryColor = (category: string): "success" | "warning" | "danger" => {
     switch (category) {
       case 'Trusted Professional':
@@ -147,7 +102,7 @@ export default function AdminDashboard() {
       case 'Low Reliability':
         return 'danger';
       default:
-        return 'success'; // Fallback to success color
+        return 'warning';
     }
   };
 
@@ -171,6 +126,38 @@ export default function AdminDashboard() {
         <p className="text-default-600">
           Manage services and reviews across the platform
         </p>
+        
+        {/* Category Legend */}
+        <div className="mt-4 flex flex-wrap gap-3 items-center">
+          <span className="text-sm font-semibold text-default-700">Service Categories:</span>
+          <Chip
+            size="sm"
+            variant="flat"
+            color="success"
+            startContent={<span className="text-xs">✓</span>}
+          >
+            Trusted Professional
+          </Chip>
+          <Chip
+            size="sm"
+            variant="flat"
+            color="warning"
+            startContent={<span className="text-xs">⚠</span>}
+          >
+            Needs Review
+          </Chip>
+          <Chip
+            size="sm"
+            variant="flat"
+            color="danger"
+            startContent={<span className="text-xs">✕</span>}
+          >
+            Low Reliability
+          </Chip>
+          <span className="text-xs text-default-500 ml-2">
+            (AI-powered categorization based on ratings and reviews)
+          </span>
+        </div>
       </div>
 
       {/* Filters */}
@@ -267,14 +254,24 @@ export default function AdminDashboard() {
                                   ✓ Verified
                                 </Badge>
                               )}
-                              {getProviderCategory(service.provider.id) && (
-                                <Badge 
-                                  color={getCategoryColor(getProviderCategory(service.provider.id)!)}
+                              {(service as any).category && (
+                                <Chip
                                   size="sm"
                                   variant="flat"
+                                  color={getCategoryColor((service as any).category)}
+                                  startContent={
+                                    (service as any).category === 'Trusted Professional' ? (
+                                      <span className="text-xs">✓</span>
+                                    ) : (service as any).category === 'Needs Review' ? (
+                                      <span className="text-xs">⚠</span>
+                                    ) : (
+                                      <span className="text-xs">✕</span>
+                                    )
+                                  }
+                                  className="font-bold"
                                 >
-                                  {getProviderCategory(service.provider.id)}
-                                </Badge>
+                                  {(service as any).category}
+                                </Chip>
                               )}
                             </div>
                           </div>

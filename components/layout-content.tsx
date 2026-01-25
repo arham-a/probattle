@@ -16,10 +16,13 @@ export function LayoutContent({ children }: LayoutContentProps) {
   const pathname = usePathname();
   
   // Check if current page is an auth page
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   
   // Check if current page is an admin page
   const isAdminPage = pathname.startsWith('/admin');
+
+  // Check if current page is the landing page
+  const isLandingPage = pathname === '/';
 
   return (
     <div className="relative flex flex-col h-screen">
@@ -37,8 +40,9 @@ export function LayoutContent({ children }: LayoutContentProps) {
       )}
       
       <main className={clsx(
-        "container mx-auto max-w-7xl px-6 flex-grow",
-        isAuthPage ? "pt-0" : "pt-16"
+        isLandingPage ? "w-full" : "container mx-auto max-w-7xl px-6",
+        "flex-grow",
+        isAuthPage ? "pt-0" : isLandingPage ? "pt-0" : "pt-16"
       )}>
         {children}
       </main>
