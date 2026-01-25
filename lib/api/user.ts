@@ -25,6 +25,15 @@ class UserService {
     }
   }
 
+  async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+    try {
+      const response = await apiClient.put<UserProfile>('/users/me', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update profile');
+    }
+  }
+
   async updateAvatar(file: File): Promise<UserProfile> {
     try {
       const formData = new FormData();
