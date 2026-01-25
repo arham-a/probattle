@@ -126,38 +126,6 @@ export default function AdminDashboard() {
         <p className="text-default-600">
           Manage services and reviews across the platform
         </p>
-        
-        {/* Category Legend */}
-        <div className="mt-4 flex flex-wrap gap-3 items-center">
-          <span className="text-sm font-semibold text-default-700">Service Categories:</span>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="success"
-            startContent={<span className="text-xs">✓</span>}
-          >
-            Trusted Professional
-          </Chip>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="warning"
-            startContent={<span className="text-xs">⚠</span>}
-          >
-            Needs Review
-          </Chip>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="danger"
-            startContent={<span className="text-xs">✕</span>}
-          >
-            Low Reliability
-          </Chip>
-          <span className="text-xs text-default-500 ml-2">
-            (AI-powered categorization based on ratings and reviews)
-          </span>
-        </div>
       </div>
 
       {/* Filters */}
