@@ -19,6 +19,18 @@ export const useUserProfile = () => {
     }
   };
 
+  const updateProfile = async (data: Partial<UserProfile>) => {
+    try {
+      setError(null);
+      const updatedProfile = await userService.updateProfile(data);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   const updateAvatar = async (file: File) => {
     try {
       setError(null);
@@ -41,5 +53,6 @@ export const useUserProfile = () => {
     error,
     refetch: fetchProfile,
     updateAvatar,
+    updateProfile,
   };
 };

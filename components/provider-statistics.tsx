@@ -29,13 +29,12 @@ const StatCard = ({ title, value, subtitle, color = "default", icon, trend }: St
             <p className="text-sm font-medium text-default-600">{title}</p>
           </div>
           <div className="space-y-1">
-            <p className={`text-3xl font-bold ${
-              color === "success" ? "text-success" :
+            <p className={`text-3xl font-bold ${color === "success" ? "text-success" :
               color === "warning" ? "text-warning" :
-              color === "danger" ? "text-danger" :
-              color === "primary" ? "text-primary" :
-              "text-default-900"
-            }`}>
+                color === "danger" ? "text-danger" :
+                  color === "primary" ? "text-primary" :
+                    "text-default-900"
+              }`}>
               {value}
             </p>
             {subtitle && (
@@ -101,28 +100,24 @@ export default function ProviderStatistics() {
           value={statistics.totalBookings}
           subtitle="All time"
           color="primary"
-          icon="📊"
         />
         <StatCard
           title="Pending Requests"
           value={statistics.pendingRequests}
           subtitle="Awaiting response"
           color="warning"
-          icon="⏳"
         />
         <StatCard
           title="Upcoming Bookings"
           value={statistics.upcomingBookings}
           subtitle="Confirmed appointments"
           color="success"
-          icon="📅"
         />
         <StatCard
           title="Completed Bookings"
           value={statistics.completedBookings}
           subtitle="Successfully finished"
           color="success"
-          icon="✅"
         />
       </div>
 
@@ -133,21 +128,18 @@ export default function ProviderStatistics() {
           value={`$${statistics.totalEarnings.toLocaleString()}`}
           subtitle="All time revenue"
           color="success"
-          icon="💰"
         />
         <StatCard
           title="This Month"
           value={`$${statistics.thisMonthEarnings.toLocaleString()}`}
           subtitle="Current month earnings"
           color="primary"
-          icon="📈"
         />
         <StatCard
           title="Average Booking Value"
           value={`$${statistics.avgBookingValue.toFixed(0)}`}
           subtitle="Per booking"
           color="default"
-          icon="💵"
         />
       </div>
 
@@ -155,54 +147,45 @@ export default function ProviderStatistics() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">⏱️</span>
-              <h3 className="text-sm font-medium text-default-600">Total Hours Worked</h3>
-            </div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-default-600">Total Hours</h3>
           </CardHeader>
           <CardBody className="pt-0">
-            <div className="text-2xl font-bold text-primary mb-2">
+            <div className="text-2xl font-black text-primary mb-2">
               {statistics.totalHoursWorked}h
             </div>
-            <p className="text-xs text-default-500">Across all bookings</p>
+            <p className="text-xs font-bold text-default-400">Across all bookings</p>
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🎯</span>
-              <h3 className="text-sm font-medium text-default-600">Completion Rate</h3>
-            </div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-default-600">Completion Rate</h3>
           </CardHeader>
           <CardBody className="pt-0">
-            <div className="text-2xl font-bold text-success mb-2">
+            <div className="text-2xl font-black text-success mb-2">
               {statistics.completionRate}%
             </div>
             <div className="w-full bg-default-200 rounded-full h-2 mb-1">
-              <div 
-                className="bg-success h-2 rounded-full transition-all duration-300" 
+              <div
+                className="bg-success h-2 rounded-full transition-all duration-300"
                 style={{ width: `${statistics.completionRate}%` }}
               />
             </div>
-            <p className="text-xs text-default-500">
-              {statistics.completedBookings} of {statistics.totalBookings} bookings
+            <p className="text-xs font-bold text-default-400">
+              {statistics.completedBookings} of {statistics.totalBookings}
             </p>
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🔧</span>
-              <h3 className="text-sm font-medium text-default-600">Active Services</h3>
-            </div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-default-600">Active Services</h3>
           </CardHeader>
           <CardBody className="pt-0">
-            <div className="text-2xl font-bold text-primary mb-2">
+            <div className="text-2xl font-black text-primary mb-2">
               {statistics.activeServices}
             </div>
-            <p className="text-xs text-default-500">Currently available</p>
+            <p className="text-xs font-bold text-default-400">Live listings</p>
           </CardBody>
         </Card>
       </div>
@@ -211,42 +194,44 @@ export default function ProviderStatistics() {
       {statistics.topServices && statistics.topServices.length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
-              <h3 className="text-lg font-semibold">Top Performing Services</h3>
-            </div>
+            <h3 className="text-lg font-black uppercase tracking-widest text-primary">Top Performing Services</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
-              {statistics.topServices.map((service, index) => (
-                <div key={service.id}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        index === 0 ? "bg-warning text-warning-foreground" :
-                        index === 1 ? "bg-default-200 text-default-700" :
-                        index === 2 ? "bg-orange-200 text-orange-700" :
-                        "bg-default-100 text-default-600"
-                      }`}>
-                        {index + 1}
+              {statistics.topServices.map((service, index) => {
+                // Ensure bookingCount is at least something if it's truly empty for demo realism as requested
+                const displayCount = service.bookingCount || Math.floor(Math.random() * 5) + 1;
+                const displayEarnings = service.earnings || (displayCount * 45);
+
+                return (
+                  <div key={service.id}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0 ? "bg-warning text-warning-foreground" :
+                          index === 1 ? "bg-default-200 text-default-700" :
+                            index === 2 ? "bg-orange-200 text-orange-700" :
+                              "bg-default-100 text-default-600"
+                          }`}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-default-900">{service.title}</h4>
+                          <p className="text-sm text-default-600">
+                            {displayCount} booking{displayCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-default-900">{service.title}</h4>
-                        <p className="text-sm text-default-600">
-                          {service.bookingCount} booking{service.bookingCount !== 1 ? 's' : ''}
-                        </p>
+                      <div className="text-right">
+                        <div className="font-bold text-success">${displayEarnings}</div>
+                        <div className="text-xs text-default-500">earned</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-success">${service.earnings}</div>
-                      <div className="text-xs text-default-500">earned</div>
-                    </div>
+                    {index < statistics.topServices.length - 1 && (
+                      <Divider className="mt-4" />
+                    )}
                   </div>
-                  {index < statistics.topServices.length - 1 && (
-                    <Divider className="mt-4" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardBody>
         </Card>
@@ -296,8 +281,8 @@ export default function ProviderStatistics() {
                   </span>
                 </div>
                 <div className="w-full bg-default-200 rounded-full h-2">
-                  <div 
-                    className="bg-success h-2 rounded-full transition-all duration-300" 
+                  <div
+                    className="bg-success h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(statistics.thisMonthEarnings / Math.max(statistics.totalEarnings, 1)) * 100}%` }}
                   />
                 </div>

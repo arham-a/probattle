@@ -9,4 +9,45 @@
 @theme {
     --font-sans: "font", sans-serif;
     --font-mono: "monospace", monospace;
+
+    --color-primary: #7F56D9;
+    --color-primary-foreground: #FFFFFF;
+
+    --radius-lg: 0.75rem;
+    --radius-md: 0.5rem;
+    --radius-sm: 0.25rem;
+}
+
+@layer base {
+  :root {
+    --primary: 259 64% 59%;
+  }
+  .dark {
+    --primary: 259 64% 59%;
+  }
+}
+
+/* Custom scrollbar for responsive tabs */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 2px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #575757;
+}
+
+/* Smooth scrolling for tabs */
+.overflow-x-auto {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a4a transparent;
 }

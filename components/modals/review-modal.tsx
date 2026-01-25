@@ -13,6 +13,7 @@ import { Textarea } from "@heroui/input";
 import { Avatar } from "@heroui/avatar";
 import { Booking } from "@/lib/api/bookings";
 import { CreateRatingRequest } from "@/lib/api/ratings";
+import { StarIcon } from "@/components/icons";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -29,170 +30,128 @@ export default function ReviewModal({ isOpen, onClose, booking, onSubmitReview }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (rating < 1 || rating > 5) {
-      newErrors.rating = "Please select a rating between 1 and 5 stars";
-    }
-
+    if (rating < 1 || rating > 5) newErrors.rating = "Select rating (1-5)";
     if (!review.trim()) {
-      newErrors.review = "Please write a review";
+      newErrors.review = "Review is required";
     } else if (review.trim().length < 10) {
-      newErrors.review = "Review must be at least 10 characters long";
+      newErrors.review = "Min 10 characters";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsSubmitting(true);
     try {
-      const reviewData: CreateRatingRequest = {
+      await onSubmitReview({
         bookingId: booking.id,
         score: rating,
         review: review.trim(),
-      };
-
-      await onSubmitReview(reviewData);
-      
-      // Reset form
+      });
       setRating(5);
       setReview("");
       setErrors({});
       onClose();
-    } catch (error) {
-      console.error('Failed to submit review:', error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    if (!isSubmitting) {
-      setRating(5);
-      setReview("");
-      setErrors({});
-      onClose();
-    }
-  };
-
-  const StarRating = () => (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => setRating(star)}
-          className={`text-2xl transition-colors ${
-            star <= rating ? 'text-warning' : 'text-default-300'
-          } hover:text-warning`}
-        >
-          ★
-        </button>
-      ))}
-      <span className="ml-2 text-sm text-default-600">
-        {rating} star{rating !== 1 ? 's' : ''}
-      </span>
-    </div>
-  );
-
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={handleClose}
-      size="2xl"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      radius="lg"
+      backdrop="blur"
       classNames={{
-        base: "max-h-[90vh]",
-        body: "py-6",
+        base: "bg-background/80 dark:bg-default-100/90 backdrop-blur-md border-none shadow-2xl",
+        header: "border-b border-default-100 dark:border-default-100/10 py-4",
+        footer: "border-t border-default-100 dark:border-default-100/10 py-4",
       }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold">Write a Review</h2>
-          <p className="text-sm text-default-600">Share your experience with this service</p>
+        <ModalHeader className="flex flex-col gap-0.5">
+          <h2 className="text-xl font-extrabold tracking-tight">Share Your Experience</h2>
+          <p className="text-xs font-medium text-default-400">Your feedback helps the community grow.</p>
         </ModalHeader>
-        
-        <ModalBody className="gap-4">
-          {/* Service and Provider Info */}
-          <div className="bg-default-50 p-4 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Avatar
-                src={booking.provider.avatar || undefined}
-                name={booking.provider.name}
-                size="sm"
-              />
-              <div>
-                <h3 className="font-semibold">{booking.service.title}</h3>
-                <p className="text-sm text-default-600">by {booking.provider.name}</p>
-              </div>
-            </div>
-            <div className="text-sm text-default-600">
-              <p>Date: {new Date(booking.requestedDate).toLocaleDateString()}</p>
-              <p>Duration: {booking.duration} hour{parseFloat(booking.duration) !== 1 ? 's' : ''}</p>
-              <p>Total: ${booking.totalPrice}</p>
+
+        <ModalBody className="py-8 gap-8">
+          {/* Service Summary */}
+          <div className="flex items-center gap-4 bg-default-50/50 dark:bg-default-50/5 p-4 rounded-xl border border-default-100 dark:border-default-100/10">
+            <Avatar
+              src={booking.provider.avatar || undefined}
+              name={booking.provider.name}
+              radius="lg"
+              className="w-12 h-12 flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-default-800 truncate">{booking.service.title}</h3>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-wider">Provided by {booking.provider.name}</p>
             </div>
           </div>
 
           {/* Rating */}
-          <div>
-            <label className="text-sm font-medium text-default-700 mb-2 block">
-              Rating *
-            </label>
-            <StarRating />
-            {errors.rating && (
-              <p className="text-danger text-sm mt-1">{errors.rating}</p>
-            )}
-          </div>
-
-          {/* Review Text */}
-          <div>
-            <Textarea
-              label="Your Review *"
-              placeholder="Tell others about your experience with this service..."
-              value={review}
-              onChange={(e) => {
-                setReview(e.target.value);
-                if (errors.review) {
-                  setErrors(prev => ({ ...prev, review: "" }));
-                }
-              }}
-              isInvalid={!!errors.review}
-              errorMessage={errors.review}
-              minRows={4}
-              maxRows={8}
-              description="Minimum 10 characters"
-            />
-          </div>
-
-          {/* Rating Guidelines */}
-          <div className="bg-primary-50 p-3 rounded-lg">
-            <h4 className="text-sm font-medium text-primary-700 mb-2">Rating Guidelines:</h4>
-            <div className="text-xs text-primary-600 space-y-1">
-              <p>★★★★★ Excellent - Exceeded expectations</p>
-              <p>★★★★☆ Good - Met expectations</p>
-              <p>★★★☆☆ Average - Acceptable service</p>
-              <p>★★☆☆☆ Poor - Below expectations</p>
-              <p>★☆☆☆☆ Very Poor - Unsatisfactory</p>
+          <div className="flex flex-col items-center gap-3">
+            <label className="text-xs font-bold text-default-500 uppercase tracking-widest">Your Rating</label>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className="p-1 transition-all hover:scale-110 active:scale-95"
+                >
+                  <StarIcon
+                    className={`w-10 h-10 ${star <= rating ? 'text-warning fill-current' : 'text-default-200'}`}
+                  />
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Text Area */}
+          <Textarea
+            label="Write a Review"
+            labelPlacement="outside"
+            placeholder="Tell us what you liked about the service..."
+            value={review}
+            onChange={(e) => {
+              setReview(e.target.value);
+              if (errors.review) setErrors({});
+            }}
+            isInvalid={!!errors.review}
+            errorMessage={errors.review}
+            minRows={3}
+            radius="lg"
+            classNames={{
+              label: "text-xs font-bold text-default-500 uppercase tracking-widest mb-2 px-1",
+              input: "text-sm font-medium p-4",
+              inputWrapper: "bg-default-100/50 hover:bg-default-200/50 focus-within:bg-default-100 transition-colors border-none py-2",
+            }}
+          />
         </ModalBody>
-        
-        <ModalFooter>
-          <Button 
-            variant="flat" 
-            onPress={handleClose}
-            isDisabled={isSubmitting}
+
+        <ModalFooter className="flex gap-3">
+          <Button
+            variant="light"
+            onPress={onClose}
+            className="font-bold text-default-500"
+            radius="lg"
           >
-            Cancel
+            Not Now
           </Button>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             onPress={handleSubmit}
             isLoading={isSubmitting}
+            className="px-10 font-bold shadow-lg shadow-primary/20"
+            radius="lg"
           >
-            {isSubmitting ? "Submitting..." : "Submit Review"}
+            Post Review
           </Button>
         </ModalFooter>
       </ModalContent>

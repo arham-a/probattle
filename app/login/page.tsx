@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
@@ -10,11 +9,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthWrapper } from "@/components/auth/auth-wrapper";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -44,18 +44,17 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
+
     try {
       await login({
         email: formData.email,
         password: formData.password,
       });
-      
-      // Redirect to dashboard on successful login
+
       router.push("/dashboard");
     } catch (error: any) {
       setErrors({ general: error.message || "Login failed. Please try again." });
@@ -66,111 +65,130 @@ export default function LoginPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
-    // Clear general error when user makes changes
     if (errors.general) {
       setErrors(prev => ({ ...prev, general: "" }));
     }
   };
 
+  const [isVisible, setIsVisible] = useState(false);
+  const toggleVisibility = () => setIsVisible(!isVisible);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] px-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-default-600">
-            Sign in to your Neighbourly account to connect with your community
-          </p>
+    <AuthWrapper
+      title="Welcome Back"
+      subtitle="Sign in to your account to continue"
+    >
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {errors.general && (
+          <div className="bg-danger/10 border border-danger/20 rounded-xl p-4">
+            <p className="text-danger text-sm font-medium">{errors.general}</p>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <Input
+            label="Email Address"
+            placeholder="name@example.com"
+            labelPlacement="outside"
+            type="email"
+            variant="flat"
+            size="lg"
+            radius="lg"
+            value={formData.email}
+            onChange={(e) => handleInputChange("email", e.target.value)}
+            isInvalid={!!errors.email}
+            errorMessage={errors.email}
+            isRequired
+            classNames={{
+              label: "text-default-700 font-semibold mb-2",
+              inputWrapper: "bg-default-100 hover:bg-default-200 transition-colors h-12",
+            }}
+          />
+
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            labelPlacement="outside"
+            type={isVisible ? "text" : "password"}
+            variant="flat"
+            size="lg"
+            radius="lg"
+            value={formData.password}
+            onChange={(e) => handleInputChange("password", e.target.value)}
+            isInvalid={!!errors.password}
+            errorMessage={errors.password}
+            isRequired
+            endContent={
+              <button className="focus:outline-none" type="button" onClick={toggleVisibility} aria-label="toggle password visibility">
+                {isVisible ? (
+                  <svg className="text-2xl text-default-400 pointer-events-none" fill="none" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" x2="23" y1="1" y2="23"></line></svg>
+                ) : (
+                  <svg className="text-2xl text-default-400 pointer-events-none" fill="none" height="1em" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="1em"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                )}
+              </button>
+            }
+            classNames={{
+              label: "text-default-700 font-semibold mb-2",
+              inputWrapper: "bg-default-100 hover:bg-default-200 transition-colors h-12",
+            }}
+          />
         </div>
 
-        {/* Login Form */}
-        <Card>
-          <CardHeader className="pb-4">
-            <h2 className="text-xl font-semibold">Sign In</h2>
-          </CardHeader>
-          <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {errors.general && (
-                <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
-                  <p className="text-danger text-sm">{errors.general}</p>
-                </div>
-              )}
+        <div className="flex justify-between items-center px-1">
+          <Switch
+            isSelected={formData.rememberMe}
+            onValueChange={(checked) => handleInputChange("rememberMe", checked)}
+            size="sm"
+            color="primary"
+          >
+            <span className="text-default-500 font-medium">Remember me</span>
+          </Switch>
+          <Link
+            as={NextLink}
+            href="/forgot-password"
+            size="sm"
+            className="text-primary font-semibold hover:opacity-80 transition-opacity"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
-              <Input
-                label="Email Address"
-                placeholder="Enter your email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                isInvalid={!!errors.email}
-                errorMessage={errors.email}
-                isRequired
-              />
+        <Button
+          type="submit"
+          color="primary"
+          className="w-full h-12 text-lg font-bold shadow-lg shadow-primary/20"
+          radius="lg"
+          isLoading={isLoading}
+        >
+          {isLoading ? "Signing In..." : "Sign In"}
+        </Button>
+      </form>
 
-              <Input
-                label="Password"
-                placeholder="Enter your password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                isInvalid={!!errors.password}
-                errorMessage={errors.password}
-                isRequired
-              />
+      <div className="mt-8">
+        <div className="relative flex items-center py-2">
+          <div className="flex-grow border-t border-default-200"></div>
+          <span className="flex-shrink mx-4 text-default-400 text-xs font-semibold uppercase tracking-wider">
+            Or
+          </span>
+          <div className="flex-grow border-t border-default-200"></div>
+        </div>
 
-              <div className="flex justify-between items-center">
-                <Switch
-                  isSelected={formData.rememberMe}
-                  onValueChange={(checked) => handleInputChange("rememberMe", checked)}
-                  size="sm"
-                >
-                  Remember me
-                </Switch>
-                <Link as={NextLink} href="/forgot-password" size="sm">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                color="primary"
-                className="w-full"
-                size="lg"
-                isLoading={isLoading}
-              >
-                {isLoading ? "Signing In..." : "Sign In"}
-              </Button>
-            </form>
-
-            <Divider className="my-6" />
-
-            <div className="text-center">
-              <p className="text-sm text-default-600">
-                Don't have an account?{" "}
-                <Link as={NextLink} href="/register" color="primary">
-                  Join the community
-                </Link>
-              </p>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Trust Indicators */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-default-500 mb-2">
-            Trusted by thousands of community members
+        <div className="text-center mt-6">
+          <p className="text-default-500 font-medium">
+            Don't have an account?{" "}
+            <Link
+              as={NextLink}
+              href="/register"
+              className="text-primary font-bold hover:underline"
+            >
+              Sign up now
+            </Link>
           </p>
-          <div className="flex justify-center items-center gap-4 text-xs text-default-400">
-            <span>🔒 Secure Login</span>
-            <span>✓ Verified Community</span>
-            <span>🛡️ Privacy Protected</span>
-          </div>
         </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
 }

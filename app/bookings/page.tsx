@@ -254,7 +254,16 @@ function BookingsContent() {
       </div>
 
       {/* Bookings Tabs */}
-      <Tabs aria-label="Booking status" className="w-full">
+      <Tabs 
+        aria-label="Booking status" 
+        className="w-full"
+        classNames={{
+          tabList: "gap-2 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-4 h-12 whitespace-nowrap flex-shrink-0",
+          tabContent: "group-data-[selected=true]:text-primary text-sm font-medium"
+        }}
+      >
         <Tab key="active" title={`Active (${activeBookings.length})`}>
           <div className="mt-4">
             {activeBookings.length > 0 ? (
